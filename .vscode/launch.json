@@ -1,0 +1,13 @@
+{
+    "version": "0.0.1",
+    "configurations": [
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Launch Test",
+        "program": "${workspaceFolder}/src/test.ts",
+        "preLaunchTask": "tsc: build - tsconfig.json",
+        "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+      }
+    ]
+  }

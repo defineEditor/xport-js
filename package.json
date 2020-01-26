@@ -1,0 +1,30 @@
+{
+  "name": "xport-js",
+  "version": "0.0.1",
+  "description": "JavaScript reader for SAS XPORT data transport files (*.xpt).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc"
+  },
+  "keywords": [
+    "xpt",
+    "sas",
+    "xport"
+  ],
+  "author": "Dmitry Kolosov, Sergei Krivtcov",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^13.1.8",
+    "@typescript-eslint/eslint-plugin": "^2.16.0",
+    "@typescript-eslint/parser": "^2.16.0",
+    "eslint": "^6.8.0",
+    "eslint-config-standard-with-typescript": "^11.0.1",
+    "eslint-plugin-import": "^2.20.0",
+    "eslint-plugin-node": "^11.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "typescript": "^3.7.5"
+  },
+  "dependencies": {}
+}
