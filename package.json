@@ -2,9 +2,10 @@
   "name": "xport-js",
   "version": "0.0.1",
   "description": "JavaScript reader for SAS XPORT v5/v6 data transport files (*.xpt).",
-  "main": "index.js",
+  "main": "dist/classes/library.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "docs": "typedoc",
     "build": "tsc"
   },
   "keywords": [
@@ -24,6 +25,7 @@
     "eslint-plugin-node": "^11.0.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
+    "typedoc": "^0.16.9",
     "typescript": "^3.7.5"
   },
   "dependencies": {}

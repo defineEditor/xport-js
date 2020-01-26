@@ -1,5 +1,6 @@
 import Member from './member';
-import { createReadStream } from 'fs';
+import { createReadStream, createWriteStream } from 'fs';
+import path from 'path';
 
 /**
  * @typedef {"array" | "object" } rowFormat
@@ -116,17 +117,48 @@ class Library {
         return result;
     }
 
+    private getHeaderRecord (member: Member, options: Options): string[]|object {
+        // If keep is used, flag which variables to skip
+        let keep = options?.keep !== undefined ? options.keep : [];
+        keep = keep.map(varName => varName.toUpperCase());
+        const skip: boolean[] = [];
+        member.variableOrder.forEach((varName: string) => {
+            if (keep.length > 0 && !keep.includes(varName.toUpperCase())) {
+                skip.push(true);
+            } else {
+                skip.push(false);
+            }
+        });
+        if (options?.rowFormat === 'object') {
+            const header: { [key: string]: string } = {};
+            member.variableOrder.forEach((varName: string, index: number) => {
+                if (skip[index] !== true) {
+                    header[varName] = member.variables[varName].label;
+                }
+            });
+            return header;
+        } else {
+            const header: string[] = [];
+            member.variableOrder.forEach((varName: string, index: number) => {
+                if (skip[index] !== true) {
+                    header.push(varName);
+                }
+            });
+            return header;
+        }
+    }
+
     /**
      * Read observations.
      * @param options Read options.
-     * @param options.dsNames List of dataset names to read, by default all datasets are read.
-     * @param options.rowFormat {rowFormat} [array] Output observation format.
-     * Array: [value1, value2, value3, ...]
-     * Object: { var1: value1, var: value2, var3: value3, ... }
-     * @param options.keep [[]] Array of variables to keep in the result (case-insensitive)
-     * @param options.skipHeader [false] Flag to control whether the first record contains variable names.
-     * @param options.encoding [binary] String encoding, default is latin1 (binary). See the list of encodings supported by Node.js:
-     * https://nodejs.org/api/buffer.html#buffer_buffers_and_character_encodings
+     * - **dsNames** List of dataset names to read, by default all datasets are read.
+     * - **rowFormat** [default=array] Output observation format.
+     * <br> array: [value1, value2, value3, ...]
+     * <br> object: { var1: value1, var: value2, var3: value3, ... }
+     * - **keep** [default=[]] Array of variables to keep in the result (case-insensitive)
+     * - **skipHeader** [default=false] Flag to control whether the first record contains variable names.
+     * - **encoding** [default=binary] String encoding, default is latin1 (binary).
+     * See the list of [encodings](https://nodejs.org/api/buffer.html#buffer_buffers_and_character_encodings) supported by Node.js.
     */
     public async * read (options?: Options): AsyncIterable<Array<number|string>|object> {
         // Check if metadata already parsed
@@ -138,34 +170,7 @@ class Library {
             const member = Object.values(this.members)[i];
             // Output header
             if (options?.skipHeader !== true) {
-                // If keep is used, flag which variables to skip
-                let keep = options?.keep !== undefined ? options.keep : [];
-                keep = keep.map(varName => varName.toUpperCase());
-                const skip: boolean[] = [];
-                member.variableOrder.forEach((varName: string) => {
-                    if (keep.length > 0 && !keep.includes(varName.toUpperCase())) {
-                        skip.push(true);
-                    } else {
-                        skip.push(false);
-                    }
-                });
-                if (options?.rowFormat === 'object') {
-                    const header: { [key: string]: string } = {};
-                    member.variableOrder.forEach((varName: string, index: number) => {
-                        if (skip[index] !== true) {
-                            header[varName] = member.variables[varName].label;
-                        }
-                    });
-                    yield header;
-                } else {
-                    const header: string[] = [];
-                    member.variableOrder.forEach((varName: string, index: number) => {
-                        if (skip[index] !== true) {
-                            header.push(varName);
-                        }
-                    });
-                    yield header;
-                }
+                yield this.getHeaderRecord(member, options);
             }
             for await (const obs of member.read(this.pathToFile, options)) {
                 yield obs;
@@ -177,6 +182,43 @@ class Library {
         });
         */
         return [];
+    }
+
+    /**
+     * Convert XPT to CSV files. Each dataset within the XPT file is written to the outDir folder as a separate csv file.
+     * @param outDir Output folder.
+     * @param options Read options. See read() method options.
+    */
+    public async toCsv (outDir: string, options?: Options): Promise<void> {
+        for (let i = 0; i < Object.keys(this.members).length; i++) {
+            const member: Member = Object.values(this.members)[i];
+            // If list of datasets provided, filter those not in the list
+            if (options?.dsNames.length > 0 &&
+                options.dsNames.map(dsName => dsName.toUpperCase()).includes(member.name.toUpperCase()) !== true
+            ) {
+                continue;
+            }
+            const writer = createWriteStream(path.join(outDir, member.name + '.csv'));
+            // Force row format to be array
+            const modifiedOpitions: Options = { ...options, rowFormat: 'array' };
+            // Print header
+            if (options?.skipHeader !== true) {
+                const header: string[] = this.getHeaderRecord(member, modifiedOpitions) as string[];
+                writer.write(header.join() + '\n');
+            }
+            for await (const obs of member.read(this.pathToFile, modifiedOpitions)) {
+                // Escape double quotes and commas
+                const escapedObs: Array<string|number> = (obs as Array<string|number>).map(elem => {
+                    if (typeof elem === 'string' && /,|"/.test(elem)) {
+                        return '"' + elem.replace('"', '""') + '"';
+                    } else {
+                        return elem;
+                    }
+                });
+                writer.write(escapedObs.join(',') + '\n');
+            }
+            writer.end();
+        }
     }
 }
 
