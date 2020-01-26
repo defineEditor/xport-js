@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "docs": "typedoc",
     "build": "tsc"
+    "publish": "npm run docs && npm run build && npm publish"
   },
   "keywords": [
     "xpt",
