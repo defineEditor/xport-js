@@ -1,4 +1,4 @@
-const struct = require('../utils/struct');
+import struct from '../utils/struct';
 
 class Variable {
     name: string;
@@ -56,10 +56,11 @@ class Variable {
      * @param raw Raw description of a varilable.
      * @param fmt Struct format used to parse the binary data.
      */
-    public parseRaw(raw: Buffer, fmt: string): void {
-        let varStruct = struct(fmt);
-        let arrBuf = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
-        let varMeta: Array<any> = varStruct.unpack(arrBuf);
+    public parseRaw (raw: Buffer, fmt: string): void {
+        const varStruct = struct(fmt);
+        const arrBuf = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const varMeta: any[] = varStruct.unpack(arrBuf);
         this.type = varMeta[0] === 1 ? 'Num' : 'Char';
         this.length = varMeta[2];
         this.varNum = varMeta[3];

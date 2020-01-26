@@ -6,7 +6,7 @@ import { createReadStream } from 'fs';
  */
 
 class Library {
-    members: Array<Member>;
+    members: Member[];
     created: object;
     modified: object;
     sasVersion: string;
@@ -17,7 +17,7 @@ class Library {
      * @param pathToFile Path to XPT file.
      * @param options Options.
      */
-    constructor (pathToFile : string) {
+    constructor (pathToFile: string) {
         this.pathToFile = pathToFile;
         this.members = [];
     }
@@ -52,11 +52,12 @@ class Library {
      *     the 2000s.
      * @param data Raw header - 3x80 bytes.
      */
-    private parseHeader(data: Buffer): void {
+    private parseHeader (data: Buffer): void {
+        //
     }
 
-    private parseMembers(data: Buffer, obsStart: number): void {
-        let member = new Member(obsStart);
+    private parseMembers (data: Buffer, obsStart: number): void {
+        const member = new Member(obsStart);
         member.parseRaw(data);
         this.members.push(member);
     }
@@ -64,16 +65,16 @@ class Library {
     /**
      * Get metadata information from XPORT file.
      */
-    public async getMetadata(): Promise<object>{
+    public async getMetadata (): Promise<object> {
         // Get header of the XPT containing metadata
         let data = Buffer.from([]);
-        let stream = createReadStream(this.pathToFile);
+        const stream = createReadStream(this.pathToFile);
         // Position of the first observation in the dataset;
         let obsStart: number;
         for await (const chunk of stream) {
             data = Buffer.concat([data, chunk]);
             // Stop reading the header when the first observatin is met
-            let obsString = data.toString('binary').indexOf('HEADER RECORD*******OBS     HEADER RECORD!!!!!!!000000000000000000000000000000');
+            const obsString = data.toString('binary').indexOf('HEADER RECORD*******OBS     HEADER RECORD!!!!!!!000000000000000000000000000000');
             if (obsString >= 0) {
                 obsStart = obsString + 80;
                 break;
@@ -82,27 +83,27 @@ class Library {
         // Parse header - first 3x80 bytes
         this.parseHeader(data.slice(0, 3 * 80));
         // Parse members - the rest
-        this.parseMembers(data.slice(3 * 80), obsStart) ;
+        this.parseMembers(data.slice(3 * 80), obsStart);
 
-        let result: Array<object> = [];
+        const result: object[] = [];
         Object.values(this.members).forEach((member: Member) => {
             member.variableOrder.forEach((varName: string) => {
-                let variable = member.variables[varName];
-                let varAttrs : { [key: string] : string|null|number } = {
+                const variable = member.variables[varName];
+                const varAttrs: { [key: string]: string|null|number } = {
                     dataset: member.name,
                     name: variable.name,
                     label: variable.label,
                     length: variable.length,
                     type: variable.type,
-                }
-                if (variable.formatName) {
+                };
+                if (variable.formatName !== '') {
                     varAttrs.format = variable.formatName + variable.formatW + '.';
                     // Avoid formats like DATE9.0
                     if (variable.formatD !== '0') {
                         varAttrs.format += variable.formatD;
                     }
                 }
-                if (variable.informatName) {
+                if (variable.informatName !== '') {
                     varAttrs.informat = variable.informatName + variable.informatW + '.';
                     if (variable.informatD !== '0') {
                         varAttrs.informat += variable.informatD;
@@ -127,22 +128,21 @@ class Library {
      * @param options.encoding [binary] String encoding, default is latin1 (binary). See the list of encodings supported by Node.js:
      * https://nodejs.org/api/buffer.html#buffer_buffers_and_character_encodings
     */
-    public async* read(options?: Options): AsyncIterable<any> {
+    public async * read (options?: Options): AsyncIterable<Array<number|string>|object> {
         // Check if metadata already parsed
         if (Object.keys(this.members).length === 0) {
             await this.getMetadata();
         }
 
-        for(let i = 0; i < Object.keys(this.members).length; i++) {
-            let member = Object.values(this.members)[i];
+        for (let i = 0; i < Object.keys(this.members).length; i++) {
+            const member = Object.values(this.members)[i];
             // Output header
             if (options?.skipHeader !== true) {
                 // If keep is used, flag which variables to skip
                 let keep = options?.keep !== undefined ? options.keep : [];
                 keep = keep.map(varName => varName.toUpperCase());
-                let skip: Array<boolean> = [];
-                member.variableOrder.forEach( (varName: string) => {
-                    let variable = member.variables[varName];
+                const skip: boolean[] = [];
+                member.variableOrder.forEach((varName: string) => {
                     if (keep.length > 0 && !keep.includes(varName.toUpperCase())) {
                         skip.push(true);
                     } else {
@@ -150,21 +150,21 @@ class Library {
                     }
                 });
                 if (options?.rowFormat === 'object') {
-                    let header: { [key: string]: string } = {};
-                    member.variableOrder.forEach( (varName: string, index: number) => {
+                    const header: { [key: string]: string } = {};
+                    member.variableOrder.forEach((varName: string, index: number) => {
                         if (skip[index] !== true) {
                             header[varName] = member.variables[varName].label;
                         }
                     });
-                   yield header;
+                    yield header;
                 } else {
-                    let header: Array<string> = [];
-                    member.variableOrder.forEach( (varName: string, index: number) => {
+                    const header: string[] = [];
+                    member.variableOrder.forEach((varName: string, index: number) => {
                         if (skip[index] !== true) {
                             header.push(varName);
                         }
                     });
-                   yield header;
+                    yield header;
                 }
             }
             for await (const obs of member.read(this.pathToFile, options)) {

@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable camelcase */
 /*
 The MIT License (MIT)
 
@@ -22,14 +25,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-const rechk = /^([<>])?(([1-9]\d*)?([xcbB?hHiIfdsp]))*$/
-const refmt = /([1-9]\d*)?([xcbB?hHiIfdsp])/g
+const rechk = /^([<>])?(([1-9]\d*)?([xcbB?hHiIfdsp]))*$/;
+const refmt = /([1-9]\d*)?([xcbB?hHiIfdsp])/g;
 const str = (v, o, c) => String.fromCharCode(
-    ...new Uint8Array(v.buffer, v.byteOffset + o, c))
+    ...new Uint8Array(v.buffer, v.byteOffset + o, c));
 const rts = (v, o, c, s) => new Uint8Array(v.buffer, v.byteOffset + o, c)
-    .set(s.split('').map(str => str.charCodeAt(0)))
-const pst = (v, o, c) => str(v, o + 1, Math.min(v.getUint8(o), c - 1))
-const tsp = (v, o, c, s) => { v.setUint8(o, s.length); rts(v, o + 1, c - 1, s) }
+    .set(s.split('').map(str => str.charCodeAt(0)));
+const pst = (v, o, c) => str(v, o + 1, Math.min(v.getUint8(o), c - 1));
+const tsp = (v, o, c, s) => { v.setUint8(o, s.length); rts(v, o + 1, c - 1, s); };
 const lut = le => ({
     x: c => [1, c, 0],
     c: c => [c, 1, o => ({ u: v => str(v, o, 1), p: (v, c) => rts(v, o, 1, c) })],
@@ -44,43 +47,43 @@ const lut = le => ({
     d: c => [c, 8, o => ({ u: v => v.getFloat64(o, le), p: (v, d) => v.setFloat64(o, d, le) })],
     s: c => [1, c, o => ({ u: v => str(v, o, c), p: (v, s) => rts(v, o, c, s.slice(0, c)) })],
     p: c => [1, c, o => ({ u: v => pst(v, o, c), p: (v, s) => tsp(v, o, c, s.slice(0, c - 1)) })]
-})
-const errbuf = new RangeError("Structure larger than remaining buffer")
-const errval = new RangeError("Not enough values for structure")
+});
+const errbuf = new RangeError('Structure larger than remaining buffer');
+const errval = new RangeError('Not enough values for structure');
 const struct = format => {
-    let fns = [], size = 0, m = rechk.exec(format)
-    if (!m) { throw new RangeError("Invalid format string") }
-    const t = lut('<' === m[1]), lu = (n, c) => t[c](n ? parseInt(n, 10) : 1)
+    const fns = []; let size = 0; let m = rechk.exec(format);
+    if (!m) { throw new RangeError('Invalid format string'); }
+    const t = lut(m[1] === '<'); const lu = (n, c) => t[c](n ? parseInt(n, 10) : 1);
     while ((m = refmt.exec(format))) {
         ((r, s, f) => {
-            for (let i = 0; i < r; ++i, size += s) { if (f) { fns.push(f(size)) } }
-        })(...lu(...m.slice(1)))
+            for (let i = 0; i < r; ++i, size += s) { if (f) { fns.push(f(size)); } }
+        })(...lu(...m.slice(1)));
     }
     const unpack_from = (arrb, offs) => {
-        if (arrb.byteLength < (offs | 0) + size) { throw errbuf }
-        let v = new DataView(arrb, offs | 0)
-        return fns.map(f => f.u(v))
-    }
+        if (arrb.byteLength < (offs | 0) + size) { throw errbuf; }
+        const v = new DataView(arrb, offs | 0);
+        return fns.map(f => f.u(v));
+    };
     const pack_into = (arrb, offs, ...values) => {
-        if (values.length < fns.length) { throw errval }
-        if (arrb.byteLength < offs + size) { throw errbuf }
-        const v = new DataView(arrb, offs)
-        new Uint8Array(arrb, offs, size).fill(0)
-        fns.forEach((f, i) => f.p(v, values[i]))
-    }
+        if (values.length < fns.length) { throw errval; }
+        if (arrb.byteLength < offs + size) { throw errbuf; }
+        const v = new DataView(arrb, offs);
+        new Uint8Array(arrb, offs, size).fill(0);
+        fns.forEach((f, i) => f.p(v, values[i]));
+    };
     const pack = (...values) => {
-        let b = new ArrayBuffer(size)
-        pack_into(b, 0, ...values)
-        return b
-    }
-    const unpack = arrb => unpack_from(arrb, 0)
-    function* iter_unpack(arrb) {
+        const b = new ArrayBuffer(size);
+        pack_into(b, 0, ...values);
+        return b;
+    };
+    const unpack = arrb => unpack_from(arrb, 0);
+    function * iter_unpack (arrb) {
         for (let offs = 0; offs + size <= arrb.byteLength; offs += size) {
             yield unpack_from(arrb, offs);
         }
     }
     return Object.freeze({
         unpack, pack, unpack_from, pack_into, iter_unpack, format, size
-    })
-}
-module.exports = struct
+    });
+};
+module.exports = struct;

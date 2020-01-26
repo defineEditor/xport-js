@@ -1,6 +1,6 @@
 interface Options {
-    rowFormat?: string;
-    keep?: Array<string>;
-    encoding?: string;
-    skipHeader?: boolean;
+    rowFormat?: string
+    keep?: string[]
+    encoding?: string
+    skipHeader?: boolean
 }

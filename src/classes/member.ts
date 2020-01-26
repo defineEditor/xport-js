@@ -3,8 +3,8 @@ import ibm2ieee from '../utils/ibm2ieee';
 import { createReadStream } from 'fs';
 
 class Member {
-    variables: {[index:string]: Variable};
-    variableOrder: Array<string>;
+    variables: {[index: string]: Variable};
+    variableOrder: string[];
     obsStart: number;
     name: string;
     label: string;
@@ -27,8 +27,8 @@ class Member {
      * Parse Member Header information.
      * @param data Raw header.
      */
-    public parseRawHeader(data: Buffer): void {
-        let headerRegex = new RegExp(
+    public parseRawHeader (data: Buffer): void {
+        const headerRegex = new RegExp(
             'HEADER RECORD\\*{7}MEMBER {2}HEADER RECORD!{7}0{17}' +
             '160{8}(?<descriptorSize>140|136) {2}' +
             'HEADER RECORD\\*{7}DSCRPTR HEADER RECORD!{7}0{30}  ' +
@@ -50,7 +50,7 @@ class Member {
      * Parse Member information from XPORT file.
      * @param stream XPT file stream.
      */
-    public parseRaw(data: Buffer): void {
+    public parseRaw (data: Buffer): void {
         // Parse basic header information;
         this.parseRawHeader(data.slice(0, 4 * 80));
         // Get the number of variables
@@ -62,10 +62,10 @@ class Member {
             format = '>hhhh8s40s8shhh2s8shhi48s';
         }
         const nameStrRaw = data.slice(4 * 80, 5 * 80).toString('binary');
-        const numVars = parseInt(/HEADER RECORD\*{7}NAMESTR HEADER RECORD\!{7}0{6}(?<numVars>.{4})0{20}/.exec(nameStrRaw).groups.numVars);
+        const numVars = parseInt(/HEADER RECORD\*{7}NAMESTR HEADER RECORD!{7}0{6}(?<numVars>.{4})0{20}/.exec(nameStrRaw).groups.numVars);
         const varMetaRaw = data.slice(5 * 80);
         for (let i = 0; i < numVars; i++) {
-            let variable: Variable = new Variable(varMetaRaw.slice(i * this.descriptorSize, (i + 1) * this.descriptorSize), format);
+            const variable: Variable = new Variable(varMetaRaw.slice(i * this.descriptorSize, (i + 1) * this.descriptorSize), format);
             this.variables[variable.name] = variable;
         }
         this.variableOrder = Object.keys(this.variables).sort((var1, var2) => {
@@ -83,21 +83,21 @@ class Member {
      * @param options Read options. See Library.read method description for details.
      * @return Async Iterable which returns observations
      */
-    public async* read(pathToFile: string, options?: Options): AsyncIterable<Array<any>> {
+    public async * read (pathToFile: string, options?: Options): AsyncIterable<Array<number|string>|object> {
         // Options
-        let encoding = options?.encoding !== undefined ? options.encoding : 'binary';
-        let rowType = options?.rowFormat === 'object' ? 'object' : 'array';
+        const encoding = options?.encoding !== undefined ? options.encoding : 'binary';
+        const rowType = options?.rowFormat === 'object' ? 'object' : 'array';
         let keep = options?.keep !== undefined ? options.keep : [];
         keep = keep.map(varName => varName.toUpperCase());
-        let stream = createReadStream(pathToFile, { start: this.obsStart });
-        let obsSize: number = Object.values(this.variables).reduce((totLen, variable) => (totLen + variable.length), 0);
+        const stream = createReadStream(pathToFile, { start: this.obsStart });
+        const obsSize: number = Object.values(this.variables).reduce((totLen, variable) => (totLen + variable.length), 0);
         // Get sizes/names/types/skip flag for all variables
-        let lengths: Array<number> = [];
-        let types: Array<string> = [];
-        let varNames: Array<string> = [];
-        let skip: Array<boolean> = [];
+        const lengths: number[] = [];
+        const types: string[] = [];
+        const varNames: string[] = [];
+        const skip: boolean[] = [];
         this.variableOrder.forEach(varName => {
-            let variable = this.variables[varName];
+            const variable = this.variables[varName];
             lengths.push(variable.length);
             types.push(variable.type);
             varNames.push(variable.name);
@@ -107,6 +107,7 @@ class Member {
                 skip.push(false);
             }
         });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let obs: any;
         let data = Buffer.from([]);
         for await (const chunk of stream) {
@@ -119,16 +120,16 @@ class Member {
                     obs = {};
                 }
                 obs = [];
-                lengths.forEach( (length, index) => {
+                lengths.forEach((length, index) => {
                     if (skip[index] === true) {
                         data = data.slice(length);
                         return;
                     }
                     let value: string|number;
                     if (types[index] === 'Num') {
-                        value = ibm2ieee(data.slice(0,length));
+                        value = ibm2ieee(data.slice(0, length));
                     } else {
-                        value = data.slice(0,length).toString(encoding).trim();
+                        value = data.slice(0, length).toString(encoding).trim();
                     }
                     if (rowType === 'array') {
                         obs.push(value);
