@@ -12,7 +12,7 @@ See the library [documentation](https://defineeditor.github.io/xport-js/index.ht
 ```
 import Library from 'xport-js';
 // Create a library instance
-const lib = new Library(/path/to/ds.xpt);
+const lib = new Library('/path/to/ds.xpt');
 // Get variable metadata
 const metadata = await lib.getMetadata();
 // Get dataset records as objects
