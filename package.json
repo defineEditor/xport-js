@@ -7,7 +7,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "docs": "typedoc",
     "build": "tsc",
-    "publish": "npm run docs && npm run build && npm publish"
+    "release": "npm run docs && npm run build && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/defineEditor/xport-js.git"
   },
   "keywords": [
     "xpt",
