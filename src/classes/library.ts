@@ -1,4 +1,5 @@
 import Member from './member';
+import parseDate from '../utils/parseDate';
 import { createReadStream, createWriteStream } from 'fs';
 import path from 'path';
 
@@ -8,8 +9,8 @@ import path from 'path';
 
 class Library {
     members: Member[];
-    created: object;
-    modified: object;
+    created: Date;
+    modified: Date;
     sasVersion: string;
     osVersion: string;
     pathToFile: string;
@@ -61,25 +62,11 @@ class Library {
             ' {24}(?<created>.{16})(?<modified>.{16})'
         );
 
-        const test = headerRegex.test(data.toString('binary'));
-        console.log(test);
-        console.log(data.toString('binary'));
-
         const header = headerRegex.exec(data.toString('binary')).groups;
         this.sasVersion = header.sasVersion.trim();
         this.osVersion = header.osVersion.trim();
-        this.created = new Date('2017-09-06T20:23:53');
-        console.log(this.sasVersion, this.osVersion, this.created);
-        
-        /*
-        const header = headerRegex.exec(data.toString('binary')).groups;
-        this.descriptorSize = parseInt(header.descriptorSize);
-        this.name = header.name.trim();
-        this.label = header.label.trim();
-        this.created = header.created.trim();
-        this.modified = header.modified.trim();
-        this.type = header.type.trim();
-        */
+        this.created = parseDate(header.created);
+        this.modified = parseDate(header.modified);
     }
 
     private parseMembers (data: Buffer, obsStart: number): void {
