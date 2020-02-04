@@ -4,7 +4,7 @@
   "description": "Node.js library to read SAS XPORT v5/v6 data transport files (*.xpt).",
   "main": "dist/classes/library.js",
   "scripts": {
-    "test": "jest -c config/jest.config.js",
+    "test": "jest --coverage --verbose",
     "docs": "typedoc",
     "build": "tsc",
     "release": "npm run docs && npm run build && npm publish"
