@@ -13,9 +13,11 @@
         "target": "ES2018"
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "test/**/*"
     ],
     "exclude": [
         "node_modules",
+        "src/example.ts"
     ]
 }
