@@ -68,7 +68,7 @@ describe(`Can read xpt records`,  () => {
         expect(firstElement!.REP).toBe(1)
         expect(firstElement!.SEEDWT).toBe(64)
         expect(firstElement!.HARV1).toBe(171.7)
-        expect(firstElement!.HARV1).toBe(180.3)
+        expect(firstElement!.HARV2).toBe(180.3)
 
         expect(records.length).toBe(40)
     })
