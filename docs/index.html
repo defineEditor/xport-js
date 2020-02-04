@@ -84,7 +84,7 @@
 <span class="hljs-keyword">const</span> metadata = <span class="hljs-keyword">await</span> lib.getMetadata();
 <span class="hljs-comment">// Get dataset records as objects</span>
 <span class="hljs-keyword">let</span> records = [];
-<span class="hljs-keyword">for</span> <span class="hljs-keyword">await</span> (<span class="hljs-keyword">let</span> obs <span class="hljs-keyword">of</span> lib.read({ <span class="hljs-attr">rowFormat</span>: <span class="hljs-string">'object'</span>})) {
+<span class="hljs-keyword">for</span> <span class="hljs-keyword">await</span> (<span class="hljs-keyword">let</span> obs <span class="hljs-keyword">of</span> lib.read({ <span class="hljs-attr">rowFormat</span>: <span class="hljs-string">'object'</span> })) {
     records.push(obs);
 }
 <span class="hljs-comment">// Output contents of XPT file to CSV file(s)</span>
