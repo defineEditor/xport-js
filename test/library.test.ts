@@ -1,4 +1,4 @@
-import { default as Library } from '../classes/library'
+import { default as Library } from '../src/classes/library'
 
 interface AlfalfaMetadata {
     dataset: string,
@@ -33,7 +33,7 @@ describe(`Can read an xpt file`,  () => {
 
     it(`Library should provide metadata`, async () => {
         const lib = new Library(path)
-        
+
         const metadata: Array<AlfalfaMetadata> = <Array<AlfalfaMetadata>> await lib.getMetadata()
         expect(metadata.length).toBe(6)
 
@@ -49,7 +49,7 @@ describe(`Can read xpt records`,  () => {
     it(`Records read are valid`, async () => {
         const output = __dirname
         const lib = new Library(path)
-        
+
         let records = []
         for await (let obs of lib.read({ rowFormat: 'object'})) {
             records.push(obs)
