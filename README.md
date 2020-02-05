@@ -17,7 +17,7 @@ const lib = new Library('/path/to/ds.xpt');
 const metadata = await lib.getMetadata();
 // Get dataset records as objects
 let records = [];
-for await (let obs of lib.read({ rowFormat: 'object'})) {
+for await (let obs of lib.read({ rowFormat: 'object' })) {
     records.push(obs);
 }
 // Output contents of XPT file to CSV file(s)
