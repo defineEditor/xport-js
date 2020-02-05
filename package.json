@@ -4,7 +4,7 @@
   "description": "Node.js library to read SAS XPORT v5/v6 data transport files (*.xpt).",
   "main": "dist/classes/library.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --coverage --verbose",
     "docs": "typedoc",
     "build": "tsc",
     "release": "npm run docs && npm run build && npm publish"
@@ -21,6 +21,7 @@
   "author": "Dmitry Kolosov, Sergei Krivtcov",
   "license": "MIT",
   "devDependencies": {
+    "@types/jest": "^25.1.1",
     "@types/node": "^13.1.8",
     "@typescript-eslint/eslint-plugin": "^2.16.0",
     "@typescript-eslint/parser": "^2.16.0",
@@ -30,6 +31,9 @@
     "eslint-plugin-node": "^11.0.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
+    "jest": "^25.1.0",
+    "jest-watch-typeahead": "^0.4.2",
+    "ts-jest": "^25.2.0",
     "typedoc": "^0.16.9",
     "typescript": "^3.7.5"
   },
