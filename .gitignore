@@ -1,4 +1,6 @@
 node_modules
 data
 dist
+yarn.lock
+.DS_Store
 src/example.ts
