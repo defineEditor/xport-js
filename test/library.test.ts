@@ -47,7 +47,6 @@ describe(`Can read an xpt file`,  () => {
 
 describe(`Can read xpt records`,  () => {
     it(`Records read are valid`, async () => {
-        const output = __dirname
         const lib = new Library(path)
 
         let records = []
