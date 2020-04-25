@@ -4,8 +4,8 @@
       {
         "type": "node",
         "request": "launch",
-        "name": "Launch Test",
-        "program": "${workspaceFolder}/src/test.ts",
+        "name": "Launch Example",
+        "program": "${workspaceFolder}/src/example.ts",
         "preLaunchTask": "tsc: build - tsconfig.json",
         "outFiles": ["${workspaceFolder}/dist/**/*.js"]
       }

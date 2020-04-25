@@ -24,6 +24,7 @@ module.exports = {
         indent: ['error', 4, { SwitchCase: 1 }],
         'linebreak-style': ['error', 'unix'],
         semi: ['error', 'always'],
+        '@typescript-eslint/semi': ['error', 'always'],
         'comma-dangle': 0,
     }
 };

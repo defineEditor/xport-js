@@ -132,7 +132,7 @@ class Library {
         if (options?.rowFormat === 'object') {
             const header: { [key: string]: string } = {};
             member.variableOrder.forEach((varName: string, index: number) => {
-                if (skip[index] !== true) {
+                if (!skip[index]) {
                     header[varName] = member.variables[varName].label;
                 }
             });
@@ -140,7 +140,7 @@ class Library {
         } else {
             const header: string[] = [];
             member.variableOrder.forEach((varName: string, index: number) => {
-                if (skip[index] !== true) {
+                if (!skip[index]) {
                     header.push(varName);
                 }
             });
@@ -149,7 +149,7 @@ class Library {
     }
 
     /**
-     * Read observations.
+     * Read observations as async iterable.
      * @param options Read options.
      * - **dsNames** List of dataset names to read, by default all datasets are read.
      * - **rowFormat** [default=array] Output observation format.
@@ -169,7 +169,7 @@ class Library {
         for (let i = 0; i < Object.keys(this.members).length; i++) {
             const member = Object.values(this.members)[i];
             // Output header
-            if (options?.skipHeader !== true) {
+            if (!options?.skipHeader) {
                 yield this.getHeaderRecord(member, options);
             }
             for await (const obs of member.read(this.pathToFile, options)) {
@@ -185,6 +185,30 @@ class Library {
     }
 
     /**
+     * Get all observations. This method will load all records into memory, for large datasets, the read method is suggested.
+     * @param options Read options. See read method options for details
+    */
+    public async getData (options?: Options): Promise<Array<Array<number|string>|object>> {
+        // Check if metadata already parsed
+        if (Object.keys(this.members).length === 0) {
+            await this.getMetadata();
+        }
+
+        const result = [];
+        for (let i = 0; i < Object.keys(this.members).length; i++) {
+            const member = Object.values(this.members)[i];
+            // Output header
+            if (!options?.skipHeader) {
+                result.push(this.getHeaderRecord(member, options));
+            }
+            for await (const obs of member.read(this.pathToFile, options)) {
+                result.push(obs);
+            }
+        }
+        return result;
+    }
+
+    /**
      * Convert XPT to CSV files. Each dataset within the XPT file is written to the outDir folder as a separate csv file.
      * @param outDir Output folder.
      * @param options Read options. See read() method options.
@@ -194,7 +218,7 @@ class Library {
             const member: Member = Object.values(this.members)[i];
             // If list of datasets provided, filter those not in the list
             if (options?.dsNames.length > 0 &&
-                options.dsNames.map(dsName => dsName.toUpperCase()).includes(member.name.toUpperCase()) !== true
+                !options.dsNames.map(dsName => dsName.toUpperCase()).includes(member.name.toUpperCase())
             ) {
                 continue;
             }
@@ -202,7 +226,7 @@ class Library {
             // Force row format to be array
             const modifiedOpitions: Options = { ...options, rowFormat: 'array' };
             // Print header
-            if (options?.skipHeader !== true) {
+            if (!options?.skipHeader) {
                 const header: string[] = this.getHeaderRecord(member, modifiedOpitions) as string[];
                 writer.write(header.join() + '\n');
             }
