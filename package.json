@@ -1,8 +1,8 @@
 {
   "name": "xport-js",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Node.js library to read SAS XPORT v5/v6 data transport files (*.xpt).",
-  "main": "dist/classes/library.js",
+  "main": "dist/src/classes/library.js",
   "scripts": {
     "test": "jest -c jest.config.js --coverage --verbose",
     "docs": "typedoc",
