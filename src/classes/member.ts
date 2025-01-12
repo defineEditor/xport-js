@@ -1,6 +1,7 @@
 import Variable from './variable';
 import ibm2ieee from '../utils/ibm2ieee';
-import { createReadStream } from 'fs';
+import { createReadStream, statSync } from 'fs';
+import { Options } from 'src/types/library';
 
 class Member {
     variables: {[index: string]: Variable};
@@ -52,7 +53,7 @@ class Member {
      */
     public parseRaw (data: Buffer): void {
         // Parse basic header information;
-        this.parseRawHeader(data.slice(0, 4 * 80));
+        this.parseRawHeader(data.subarray(0, 4 * 80));
         // Get the number of variables
         // Format depends on the OS
         let format: string;
@@ -61,11 +62,11 @@ class Member {
         } else {
             format = '>hhhh8s40s8shhh2s8shhi48s';
         }
-        const nameStrRaw = data.slice(4 * 80, 5 * 80).toString('binary');
+        const nameStrRaw = data.subarray(4 * 80, 5 * 80).toString('binary');
         const numVars = parseInt(/HEADER RECORD\*{7}NAMESTR HEADER RECORD!{7}0{6}(?<numVars>.{4})0{20}/.exec(nameStrRaw).groups.numVars);
-        const varMetaRaw = data.slice(5 * 80);
+        const varMetaRaw = data.subarray(5 * 80);
         for (let i = 0; i < numVars; i++) {
-            const variable: Variable = new Variable(varMetaRaw.slice(i * this.descriptorSize, (i + 1) * this.descriptorSize), format);
+            const variable: Variable = new Variable(varMetaRaw.subarray(i * this.descriptorSize, (i + 1) * this.descriptorSize), format);
             this.variables[variable.name] = variable;
         }
         this.variableOrder = Object.keys(this.variables).sort((var1, var2) => {
@@ -122,14 +123,14 @@ class Member {
                 obs = [];
                 lengths.forEach((length, index) => {
                     if (skip[index] === true) {
-                        data = data.slice(length);
+                        data = data.subarray(length);
                         return;
                     }
                     let value: string|number;
                     if (types[index] === 'Num') {
-                        value = ibm2ieee(data.slice(0, length));
+                        value = ibm2ieee(data.subarray(0, length));
                     } else {
-                        value = data.slice(0, length).toString(encoding).trim();
+                        value = data.subarray(0, length).toString(encoding).trim();
                     }
                     if (rowType === 'array') {
                         obs.push(value);
@@ -137,11 +138,36 @@ class Member {
                         obs[varNames[index]] = value;
                     }
                     // Skip the bytes which were just processed
-                    data = data.slice(length);
+                    data = data.subarray(length);
                 });
                 yield obs;
             }
         }
+    }
+
+    /**
+     * Get total number of records in the member
+     * @param pathToFile Path to XPT file
+     * @returns Number of records
+     */
+    public getRecordsNum(pathToFile: string): number {
+        if (!this.variables || Object.keys(this.variables).length === 0) {
+            return 0;
+        }
+
+        const obsSize: number = Object.values(this.variables).reduce((totLen, variable) => (totLen + variable.length), 0);
+        const stats = statSync(pathToFile);
+
+        // Calculate data section size by removing:
+        // - Library header (5 * 80 bytes)
+        // - Member header (4 * 80 bytes)
+        // - Namestr header (1 * 80 bytes)
+        // - Variable information (this.descriptorSize * number of variables)
+        const numVars = Object.keys(this.variables).length;
+        const headerSize = (5 + 4 + 1) * 80 + (this.descriptorSize * numVars);
+
+        const dataSize = stats.size - headerSize;
+        return Math.floor(dataSize / obsSize);
     }
 }
 

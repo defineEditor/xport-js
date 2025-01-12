@@ -1,5 +1,8 @@
 import Member from './member';
+import { Header, Options } from '../types/library.d';
+import { DatasetMetadata as DatasetJsonMetadata, ItemDescription as DatasetJsonColumn } from 'js-stream-dataset-json';
 import { createReadStream, createWriteStream } from 'fs';
+import Filter from 'js-array-filter';
 import path from 'path';
 
 /**
@@ -13,6 +16,7 @@ class Library {
     sasVersion: string;
     osVersion: string;
     pathToFile: string;
+    header: Header;
     /**
      * Library associated with the XPORT file.
      * @param pathToFile Path to XPT file.
@@ -21,6 +25,14 @@ class Library {
     constructor (pathToFile: string) {
         this.pathToFile = pathToFile;
         this.members = [];
+        this.header = {
+            sasSymbol: [],
+            sasLib: '',
+            sasVer: '',
+            sasOs: '',
+            sasCreate: '',
+            sasModified: ''
+        };
     }
 
     /**
@@ -53,8 +65,28 @@ class Library {
      *     the 2000s.
      * @param data Raw header - 3x80 bytes.
      */
-    private parseHeader (data: Buffer): void {
-        //
+    private parseHeader (dataBuffer: Buffer): void {
+        // Skip first 80 bytes till the first real header record
+        const headerBuffer = dataBuffer.subarray(80, 3 * 80);
+
+        const sasSymbol1 = headerBuffer.subarray(0, 8).toString('ascii').trim();
+        const sasSymbol2 = headerBuffer.subarray(8, 16).toString('ascii').trim();
+        const sasLib = headerBuffer.subarray(16, 24).toString('ascii').trim();
+        const sasVer = headerBuffer.subarray(24, 32).toString('ascii').trim();
+        const sasOs = headerBuffer.subarray(32, 40).toString('ascii').trim();
+        const sasCreate = headerBuffer.subarray(64, 80).toString('ascii').trim();
+        const sasModified = headerBuffer.subarray(80, 2 * 80).toString('ascii').trim();
+
+        this.header.sasSymbol = [sasSymbol1, sasSymbol2];
+        this.header.sasLib = sasLib;
+        this.header.sasVer = sasVer;
+        this.header.sasOs = sasOs;
+        this.header.sasCreate = sasCreate;
+        this.header.sasModified = sasModified;
+    }
+
+    public getHeader (): Header {
+        return this.header;
     }
 
     private parseMembers (data: Buffer, obsStart: number): void {
@@ -66,7 +98,9 @@ class Library {
     /**
      * Get metadata information from XPORT file.
      */
-    public async getMetadata (): Promise<object> {
+    public async getMetadata<T extends "xport" | "dataset-json1.1">(
+        format: T = "xport" as T
+    ): Promise<T extends "dataset-json1.1" ? DatasetJsonMetadata : object> {
         // Get header of the XPT containing metadata
         let data = Buffer.from([]);
         const stream = createReadStream(this.pathToFile);
@@ -82,9 +116,9 @@ class Library {
             }
         }
         // Parse header - first 3x80 bytes
-        this.parseHeader(data.slice(0, 3 * 80));
+        this.parseHeader(data.subarray(0, 3 * 80));
         // Parse members - the rest
-        this.parseMembers(data.slice(3 * 80), obsStart);
+        this.parseMembers(data.subarray(3 * 80), obsStart);
 
         const result: object[] = [];
         Object.values(this.members).forEach((member: Member) => {
@@ -114,7 +148,45 @@ class Library {
             });
         });
 
-        return result;
+        if (format === 'xport') {
+            return result as T extends "dataset-json1.1" ? DatasetJsonMetadata : object;
+        } else if (format === 'dataset-json1.1') {
+            if (this.members.length !== 1) {
+                // throw(new Error('format only supports single dataset files'));
+            }
+            const currentMember = this.members[0];
+            const records = currentMember.getRecordsNum(this.pathToFile);
+
+            const updatedColumns: DatasetJsonColumn[] = result.map((column: { [key: string]: string }) => {
+                const updateType = column.type === 'Char' ? 'string' : 'double';
+                const updatedColumn: DatasetJsonColumn = {
+                    itemOID: column.name,
+                    name: column.name,
+                    label: column.label,
+                    dataType: updateType,
+                    length: parseInt(column.length),
+                    displayFormat: column.format,
+                };
+                return updatedColumn;
+            });
+
+            // Format metadata similar to Dataset-JSON 1.1 spec
+            const djMetadata: DatasetJsonMetadata = {
+                datasetJSONCreationDateTime: currentMember.created,
+                datasetJSONVersion: '',
+                records,
+                name: currentMember.name,
+                label: currentMember.label,
+                columns: updatedColumns,
+                dbLastModifiedDateTime: currentMember.modified,
+                sourceSystem: {
+                    name: `${this.header.sasSymbol[0]} ${this.header.sasOs}`,
+                    version: this.header.sasVer,
+                }
+
+            };
+            return djMetadata;
+        }
     }
 
     private getHeaderRecord (member: Member, options: Options): string[]|object {
@@ -187,22 +259,58 @@ class Library {
     /**
      * Get all observations. This method will load all records into memory, for large datasets, the read method is suggested.
      * @param options Read options. See read method options for details
-    */
-    public async getData (options?: Options): Promise<Array<Array<number|string>|object>> {
+     */
+    public async getData(props: {
+        start?: number;
+        length?: number;
+        type?: "object" | "array";
+        filterColumns?: string[];
+        filter?: Filter;
+        skipHeader?: boolean;
+    }): Promise<Array<Array<number|string>|object>> {
         // Check if metadata already parsed
+        const { start = 0, length, type = 'array', filter, skipHeader = true, filterColumns } = props;
+
+        const isFiltered = filter !== undefined;
+
         if (Object.keys(this.members).length === 0) {
             await this.getMetadata();
         }
+
+        // Form options;
+        const options: Options = {
+            rowFormat: type,
+            keep: filterColumns,
+            skipHeader: skipHeader,
+            filter: filter
+        };
+
+        let currentObs = 0;
 
         const result = [];
         for (let i = 0; i < Object.keys(this.members).length; i++) {
             const member = Object.values(this.members)[i];
             // Output header
-            if (!options?.skipHeader) {
+            if (!props?.skipHeader) {
                 result.push(this.getHeaderRecord(member, options));
             }
             for await (const obs of member.read(this.pathToFile, options)) {
-                result.push(obs);
+                currentObs++;
+                if (start !== undefined && currentObs < start) {
+                    // Skip until start
+                    continue;
+                }
+                if (isFiltered) {
+                    if (filter.filterRow(obs)) {
+                        result.push(obs);
+                    }
+                } else {
+                    result.push(obs);
+                }
+                if (length && result.length === length) {
+                    // Stop when length is reached
+                    break;
+                }
             }
         }
         return result;
