@@ -1,5 +1,5 @@
 {
-    "inputFiles": ["./src/classes/*", "README.md", "LICENSE"],
+    "entryPoints": ["./src/classes/*", "README.md", "LICENSE"],
     "exclude": ["./src/utils/*"],
     "excludePrivate": true,
     "out": "docs"
