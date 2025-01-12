@@ -10,7 +10,7 @@
         "preserveConstEnums": true,
         "sourceMap": true,
         "baseUrl": ".",
-        "target": "ES2018"
+        "target": "ES2022"
     },
     "include": [
         "src/**/*",

@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Test parseHeader method Should correctly parse the header 1`] = `
+{
+  "sasCreate": "23FEB18:03:32:49",
+  "sasLib": "SASLIB",
+  "sasModified": "23FEB18:03:32:49",
+  "sasOs": "X64_DS12",
+  "sasSymbol": [
+    "SAS",
+    "SAS",
+  ],
+  "sasVer": "9.4",
+}
+`;

@@ -1,4 +1,5 @@
 import Library from '../src/classes/library';
+import Filter from 'js-array-filter';
 
 interface AlfalfaMetadata {
     dataset: string
@@ -43,6 +44,34 @@ describe('Can read an xpt file', () => {
         expect(firstElement.label).toBe('');
         expect(firstElement.type).toBe('Char');
     });
+
+    it('Library should provide metadata in dataset-json1.1 format', async () => {
+        const lib = new Library(path);
+
+        const metadata = await lib.getMetadata('dataset-json1.1');
+        
+        // Check required dataset-json1.1 properties
+        expect(metadata.name).toBe('SPEC');
+        expect(metadata.records).toBe(40);
+        expect(Array.isArray(metadata.columns)).toBe(true);
+        expect(metadata.columns.length).toBe(6);
+
+        // Check first column structure
+        const firstColumn = metadata.columns[0];
+        expect(firstColumn.itemOID).toBe('POP');
+        expect(firstColumn.name).toBe('POP');
+        expect(firstColumn.dataType).toBe('string');
+        expect(typeof firstColumn.length).toBe('number');
+
+        // Check source system info
+        expect(metadata.sourceSystem).toBeDefined();
+        expect(typeof metadata.sourceSystem.name).toBe('string');
+        expect(typeof metadata.sourceSystem.version).toBe('string');
+
+        // Check datetime fields
+        expect(metadata.datasetJSONCreationDateTime).toBeDefined();
+        expect(metadata.dbLastModifiedDateTime).toBeDefined();
+    });
 });
 
 describe('Can read xpt records using await iterable', () => {
@@ -77,7 +106,7 @@ describe('Can read xpt records using await function', () => {
     it('Records read are valid', async () => {
         const lib = new Library(path);
 
-        const records = await lib.getData({ rowFormat: 'object' });
+        const records = await lib.getData({ type: 'object' });
         const headers = records.shift() as AlfalfaRecord;
         expect(headers.POP).toBe('');
         expect(headers.SAMPLE).toBe('');
@@ -95,5 +124,35 @@ describe('Can read xpt records using await function', () => {
         expect(firstElement.HARV2).toBe(180.3);
 
         expect(records.length).toBe(40);
+    });
+
+    it('Should filter records correctly', async () => {
+        const lib = new Library(path);
+        const columns = await lib.getMetadata() as AlfalfaMetadata[];
+
+        const updatedColumns = columns.map((column) => {
+            return { ...column, dataType: column.type };
+        });
+        
+        const filter = new Filter("xpt", updatedColumns, {
+            conditions: [
+                { variable: "POP", operator: "eq", value: 'MAX' },
+                { variable: "SAMPLE", operator: "ge", value: 3 },
+            ],
+            connectors: ["and"],
+        });
+
+        const records = await lib.getData({ type: 'array', filter });
+        expect(records.length).toBe(21);
+    });
+});
+
+describe('Test parseHeader method', () => {
+    it('Should correctly parse the header', async () => {
+        const lib = new Library(path);
+        const _metadata: AlfalfaMetadata[] = await lib.getMetadata() as AlfalfaMetadata[];
+
+        const header = lib.getHeader();
+        expect(header).toMatchSnapshot();
     });
 });
