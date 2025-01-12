@@ -8,7 +8,7 @@
     "docs": "typedoc",
     "build": "tsc",
     "lint": "eslint . --ignore-pattern 'dist' --ignore-pattern 'docs' --ignore-pattern 'src/**/*.js' --ignore-pattern '*.js' --ignore-pattern 'src/example.ts'",
-    "publish": "npm run list && npm run test && npm run docs && npm run build",
+    "publish": "npm run lint && npm run test && npm run docs && npm run build",
     "upgrade-interactive": "npm-check --update"
   },
   "repository": {
