@@ -10,7 +10,9 @@
         "preserveConstEnums": true,
         "sourceMap": true,
         "baseUrl": ".",
-        "target": "ES2022"
+        "target": "ES2022",
+        "declaration": true,
+        "declarationDir": "./dist/types"
     },
     "include": [
         "src/**/*",

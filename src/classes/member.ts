@@ -1,7 +1,7 @@
 import Variable from './variable';
 import ibm2ieee from '../utils/ibm2ieee';
 import { createReadStream, statSync } from 'fs';
-import { Options } from 'src/types/library';
+import { Options } from '../types/library';
 
 class Member {
     variables: {[index: string]: Variable};
@@ -88,6 +88,11 @@ class Member {
         // Options
         const encoding = options?.encoding !== undefined ? options.encoding : 'binary';
         const rowType = options?.rowFormat === 'object' ? 'object' : 'array';
+        const roundPrecision = options?.roundPrecision;
+        let multiplier: number;
+        if (roundPrecision !== undefined) {
+            multiplier = Math.pow(10, roundPrecision);
+        }
         let keep = options?.keep !== undefined ? options.keep : [];
         keep = keep.map(varName => varName.toUpperCase());
         const stream = createReadStream(pathToFile, { start: this.obsStart });
@@ -128,7 +133,11 @@ class Member {
                     }
                     let value: string|number;
                     if (types[index] === 'Num') {
-                        value = ibm2ieee(data.subarray(0, length));
+                        if (roundPrecision !== undefined) {
+                            value = Math.round(ibm2ieee(data.subarray(0, length)) * multiplier) / multiplier;
+                        } else {
+                            value = ibm2ieee(data.subarray(0, length));
+                        }
                     } else {
                         value = data.subarray(0, length).toString(encoding).trim();
                     }
@@ -158,15 +167,29 @@ class Member {
         const obsSize: number = Object.values(this.variables).reduce((totLen, variable) => (totLen + variable.length), 0);
         const stats = statSync(pathToFile);
 
-        // Calculate data section size by removing:
-        // - Library header (5 * 80 bytes)
-        // - Member header (4 * 80 bytes)
-        // - Namestr header (1 * 80 bytes)
-        // - Variable information (this.descriptorSize * number of variables)
+        // Calculate nameStr section size with proper padding
         const numVars = Object.keys(this.variables).length;
-        const headerSize = (5 + 4 + 1) * 80 + (this.descriptorSize * numVars);
+        // Each nameStr record length depends on OS/format (140 or 136 bytes)
+        const totalNameStrBytes = numVars * this.descriptorSize;
+        // nameStr records are stored in 80-byte blocks
+        // Calculate how many full 80-byte blocks we need
+        const numFullRecords = Math.floor(totalNameStrBytes / 80);
+        // Calculate remaining bytes that don't fill a complete 80-byte block
+        const remainingBytes = totalNameStrBytes % 80;
+        // If we have remaining bytes, we need one more block with padding
+        const paddedNameStrSize = remainingBytes > 0 ? (numFullRecords + 1) * 80 : numFullRecords * 80;
 
+        // Calculate total header size:
+        // - Library header (3 blocks * 80 bytes)
+        // - Member header (4 blocks * 80 bytes)
+        // - Namestr header (1 block * 80 bytes)
+        // - Variable information (padded nameStr section)
+        // - Data heaader header (1 block * 80 bytes)
+        const headerSize = (3 + 4 + 1) * 80 + paddedNameStrSize + 80;
+
+        // Calculate actual data size by removing all headers
         const dataSize = stats.size - headerSize;
+        // Use floor to avoid counting partial records
         return Math.floor(dataSize / obsSize);
     }
 }

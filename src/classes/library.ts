@@ -1,5 +1,5 @@
 import Member from './member';
-import { Header, Options } from '../types/library.d';
+import { Header, Options } from '../types/library';
 import { DatasetMetadata as DatasetJsonMetadata, ItemDescription as DatasetJsonColumn } from 'js-stream-dataset-json';
 import { createReadStream, createWriteStream } from 'fs';
 import Filter, { ItemDataArray } from 'js-array-filter';
@@ -267,9 +267,10 @@ class Library {
         filterColumns?: string[];
         filter?: Filter;
         skipHeader?: boolean;
+        roundPrecision?: number;
     }): Promise<Array<Array<number|string>|object>> {
         // Check if metadata already parsed
-        const { start = 0, length, type = 'array', filter, skipHeader = true, filterColumns } = props;
+        const { start = 0, length, type = 'array', filter, skipHeader = true, filterColumns, roundPrecision } = props;
 
         const isFiltered = filter !== undefined;
 
@@ -282,7 +283,8 @@ class Library {
             rowFormat: type,
             keep: filterColumns,
             skipHeader: skipHeader,
-            filter: filter
+            filter: filter,
+            roundPrecision,
         };
 
         let currentObs = 0;
@@ -291,7 +293,7 @@ class Library {
         for (let i = 0; i < Object.keys(this.members).length; i++) {
             const member = Object.values(this.members)[i];
             // Output header
-            if (!props?.skipHeader) {
+            if (!skipHeader) {
                 result.push(this.getHeaderRecord(member, options));
             }
             for await (const obs of member.read(this.pathToFile, options)) {

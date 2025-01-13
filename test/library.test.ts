@@ -106,7 +106,7 @@ describe('Can read xpt records using await function', () => {
     it('Records read are valid', async () => {
         const lib = new Library(path);
 
-        const records = await lib.getData({ type: 'object' });
+        const records = await lib.getData({ type: 'object', skipHeader: false });
         const headers = records.shift() as AlfalfaRecord;
         expect(headers.POP).toBe('');
         expect(headers.SAMPLE).toBe('');
@@ -126,6 +126,25 @@ describe('Can read xpt records using await function', () => {
         expect(records.length).toBe(40);
     });
 
+    it('Should round numeric values according to precision', async () => {
+        const lib = new Library(path);
+        const records = await lib.getData({
+            type: 'object',
+            roundPrecision: 1
+        });
+
+        const firstElement: AlfalfaRecord = records[1] as AlfalfaRecord;
+        expect(firstElement.HARV1).toBe(138.2);  // Original value preserved
+
+        const roundedRecords = await lib.getData({
+            type: 'object',
+            roundPrecision: 0
+        });
+
+        const firstRoundedElement: AlfalfaRecord = roundedRecords[1] as AlfalfaRecord;
+        expect(firstRoundedElement.HARV1).toBe(138);  // Rounded to nearest integer
+    });
+
     it('Should filter records correctly', async () => {
         const lib = new Library(path);
         const columns = await lib.getMetadata() as AlfalfaMetadata[];
@@ -143,7 +162,7 @@ describe('Can read xpt records using await function', () => {
         });
 
         const records = await lib.getData({ type: 'array', filter });
-        expect(records.length).toBe(21);
+        expect(records.length).toBe(20);
     });
 });
 

@@ -7,6 +7,7 @@ export interface Options {
     encoding?: BufferEncoding;
     skipHeader?: boolean;
     filter?: Filter;
+    roundPrecision?: number;
 }
 
 export interface Header {
