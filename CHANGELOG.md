@@ -1,3 +1,9 @@
+# 0.2.1
+- Fixed an issue in getData when header row was read in case skipHeader is not specified (default is true)
+- Updated getRecordsNum for better row estimation
+- Add roundingPrecision option in getData and read methods
+- Exporting declarations
+
 # 0.2.0
 
 - Breaking change. Updated getData method to use a different way to provide parameters
