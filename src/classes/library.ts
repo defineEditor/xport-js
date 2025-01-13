@@ -2,7 +2,7 @@ import Member from './member';
 import { Header, Options } from '../types/library.d';
 import { DatasetMetadata as DatasetJsonMetadata, ItemDescription as DatasetJsonColumn } from 'js-stream-dataset-json';
 import { createReadStream, createWriteStream } from 'fs';
-import Filter from 'js-array-filter';
+import Filter, { ItemDataArray } from 'js-array-filter';
 import path from 'path';
 
 /**
@@ -301,7 +301,7 @@ class Library {
                     continue;
                 }
                 if (isFiltered) {
-                    if (filter.filterRow(obs)) {
+                    if (filter.filterRow(obs as ItemDataArray)) {
                         result.push(obs);
                     }
                 } else {

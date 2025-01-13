@@ -1,6 +1,6 @@
 {
     "entryPoints": ["./src/classes/*", "README.md", "LICENSE"],
-    "exclude": ["./src/utils/*"],
+    "exclude": ["./src/utils/*", "node_modules/**/*"],
     "excludePrivate": true,
     "out": "docs"
 }

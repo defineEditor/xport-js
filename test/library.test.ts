@@ -1,5 +1,5 @@
 import Library from '../src/classes/library';
-import Filter from 'js-array-filter';
+import Filter, { ColumnMetadata } from 'js-array-filter';
 
 interface AlfalfaMetadata {
     dataset: string
@@ -49,7 +49,7 @@ describe('Can read an xpt file', () => {
         const lib = new Library(path);
 
         const metadata = await lib.getMetadata('dataset-json1.1');
-        
+
         // Check required dataset-json1.1 properties
         expect(metadata.name).toBe('SPEC');
         expect(metadata.records).toBe(40);
@@ -130,10 +130,10 @@ describe('Can read xpt records using await function', () => {
         const lib = new Library(path);
         const columns = await lib.getMetadata() as AlfalfaMetadata[];
 
-        const updatedColumns = columns.map((column) => {
-            return { ...column, dataType: column.type };
+        const updatedColumns: ColumnMetadata[] = columns.map((column) => {
+            return ({ ...column, dataType: column.type } as  ColumnMetadata);
         });
-        
+
         const filter = new Filter("xpt", updatedColumns, {
             conditions: [
                 { variable: "POP", operator: "eq", value: 'MAX' },
