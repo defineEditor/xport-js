@@ -298,7 +298,7 @@ class Library {
             }
             for await (const obs of member.read(this.pathToFile, options)) {
                 currentObs++;
-                if (start !== undefined && currentObs < start) {
+                if (start !== undefined && currentObs <= start) {
                     // Skip until start
                     continue;
                 }
