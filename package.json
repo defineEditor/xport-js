@@ -8,7 +8,7 @@
     "test": "jest -c jest.config.js --coverage --verbose",
     "docs": "typedoc",
     "build": "tsc",
-    "lint": "eslint . --ignore-pattern 'dist' --ignore-pattern 'docs' --ignore-pattern 'src/**/*.js' --ignore-pattern '*.js' --ignore-pattern 'src/example.ts'",
+    "lint": "eslint . --ignore-pattern 'dist' --ignore-pattern 'docs' --ignore-pattern 'src/**/*.js' --ignore-pattern '*.js' --ignore-pattern 'src/example.ts' --ignore-pattern 'test'",
     "release": "npm run lint && npm run test && npm run build && npm publish",
     "upgrade-interactive": "npm-check --update"
   },
