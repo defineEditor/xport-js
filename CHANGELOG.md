@@ -1,4 +1,5 @@
 # 0.2.2
+- Fixed getData issue, when start option is specified (started reading from the previous record)
 - Dependency update, fixing a bug in the filters
 
 # 0.2.1
