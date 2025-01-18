@@ -1,6 +1,7 @@
-# 0.2.2
+# 0.2.2 - 0.2.4
 - Fixed getData issue, when start option is specified (started reading from the previous record)
 - Dependency update, fixing a bug in the filters
+- Removing tests from dist
 
 # 0.2.1
 - Fixed an issue in getData when header row was read in case skipHeader is not specified (default is true)
