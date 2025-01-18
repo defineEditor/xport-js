@@ -1,6 +1,6 @@
 {
   "name": "xport-js",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Node.js library to read SAS XPORT v5/v6 data transport files (*.xpt).",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
@@ -37,6 +37,6 @@
     "js-stream-dataset-json": "^0.5.0"
   },
   "dependencies": {
-    "js-array-filter": "^0.1.1"
+    "js-array-filter": "^0.1.4"
   }
 }

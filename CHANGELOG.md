@@ -1,3 +1,6 @@
+# 0.2.2
+- Dependency update, fixing a bug in the filters
+
 # 0.2.1
 - Fixed an issue in getData when header row was read in case skipHeader is not specified (default is true)
 - Updated getRecordsNum for better row estimation
