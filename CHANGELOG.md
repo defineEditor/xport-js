@@ -1,3 +1,6 @@
+# 0.2.5
+- Added handling missing values, numeric missing values ., .A-.Z are read as null
+
 # 0.2.2 - 0.2.4
 - Fixed getData issue, when start option is specified (started reading from the previous record)
 - Dependency update, fixing a bug in the filters
