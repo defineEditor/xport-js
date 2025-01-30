@@ -1,7 +1,7 @@
 import Library from '../src/classes/library';
 import Filter, { ColumnMetadata } from 'js-array-filter';
 
-interface AlfalfaMetadata {
+interface DsMetadata {
     dataset: string
     label: string
     length: number
@@ -35,7 +35,7 @@ describe('Can read an xpt file', () => {
     it('Library should provide metadata', async () => {
         const lib = new Library(path);
 
-        const metadata: AlfalfaMetadata[] = await lib.getMetadata() as AlfalfaMetadata[];
+        const metadata: DsMetadata[] = await lib.getMetadata() as DsMetadata[];
         expect(metadata.length).toBe(6);
 
         const firstElement = metadata[0];
@@ -147,7 +147,7 @@ describe('Can read xpt records using await function', () => {
 
     it('Should filter records correctly', async () => {
         const lib = new Library(path);
-        const columns = await lib.getMetadata() as AlfalfaMetadata[];
+        const columns = await lib.getMetadata() as DsMetadata[];
 
         const updatedColumns: ColumnMetadata[] = columns.map((column) => {
             return ({ ...column, dataType: column.type } as  ColumnMetadata);
@@ -169,9 +169,29 @@ describe('Can read xpt records using await function', () => {
 describe('Test parseHeader method', () => {
     it('Should correctly parse the header', async () => {
         const lib = new Library(path);
-        const _metadata: AlfalfaMetadata[] = await lib.getMetadata() as AlfalfaMetadata[];
+        const _metadata: DsMetadata[] = await lib.getMetadata() as DsMetadata[];
 
         const header = lib.getHeader();
         expect(header).toMatchSnapshot();
+    });
+});
+
+describe('Test missing values', () => {
+    it('Should read missing values as null', async () => {
+        const adttePath = `${__dirname}/adtte.xpt`;
+        const lib = new Library(adttePath);
+        const columns = await lib.getMetadata() as DsMetadata[];
+        const updatedColumns: ColumnMetadata[] = columns.map((column) => {
+            return ({ ...column, dataType: column.type } as  ColumnMetadata);
+        });
+
+        const filter = new Filter("xpt", updatedColumns, {
+            conditions: [
+                { variable: "SRCSEQ", operator: "eq", value: null },
+            ],
+            connectors: [],
+        });
+        const records = await lib.getData({ type: 'array', filter });
+        expect(records.length).toBe(102);
     });
 });
