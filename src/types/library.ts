@@ -18,3 +18,11 @@ export interface Header {
     sasCreate: string;
     sasModified: string;
 }
+
+export interface UniqueValues {
+    [name: string]: {
+        values: (string | number | boolean | null)[]
+        counts: {[name: string]: number}
+
+    };
+}

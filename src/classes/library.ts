@@ -1,5 +1,5 @@
 import Member from './member';
-import { Header, Options } from '../types/library';
+import { Header, Options, UniqueValues } from '../types/library';
 import { DatasetMetadata as DatasetJsonMetadata, ItemDescription as DatasetJsonColumn } from 'js-stream-dataset-json';
 import { createReadStream, createWriteStream } from 'fs';
 import Filter, { ItemDataArray } from 'js-array-filter';
@@ -312,6 +312,88 @@ class Library {
                 if (length && result.length === length) {
                     // Stop when length is reached
                     break;
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Get unique values observations.
+     * @param columns - The list of variables for which to obtain the unique observations.
+     * @param limit - The maximum number of values to store. 0 - no limit.
+     * @param sort - Controls whether to sort the unique values.
+     * @return An array of observations.
+     */
+    async getUniqueValues(props: {
+        columns: string[];
+        limit?: number;
+        addCount?: boolean;
+        sort?: boolean;
+        roundPrecision?: number;
+    }): Promise<UniqueValues> {
+
+        const { limit = 0, addCount = false, sort = false, roundPrecision } = props;
+        let { columns } = props;
+        // Check if metadata already parsed
+        const metadata = await this.getMetadata('dataset-json1.1');
+
+        const notFoundColumns: string[] = [];
+        // Use the case of the columns as specified in the metadata
+        columns = columns.map((item) => {
+            const column = metadata.columns.find(
+                (column) => column.name.toLowerCase() === item.toLowerCase()
+            );
+            if (column === undefined) {
+                notFoundColumns.push(item);
+                return '';
+            } else {
+                return column.name as string;
+            }
+        });
+
+        if (notFoundColumns.length > 0) {
+            return Promise.reject(
+                new Error(`Columns ${notFoundColumns.join(', ')} not found`)
+            );
+        }
+
+        // Store number of unique values found
+        const uniqueCount: { [name: string]: number } = {};
+        columns.forEach((column) => {
+            uniqueCount[column] = 0;
+        });
+
+        let isFinished = false;        
+
+        // Form options;
+        const options: Options = {
+            rowFormat: "object",
+            keep: columns,
+            skipHeader: true,
+            roundPrecision,
+        };
+
+        const result: UniqueValues = {};
+        for (let i = 0; i < Object.keys(this.members).length; i++) {
+            const member = Object.values(this.members)[i];
+            for await (const obs of member.read(this.pathToFile, options)) {
+                columns.forEach((column) => {
+                if (result[column] === undefined) {
+                    result[column] = { values: [], counts: {} };
+                }
+                if (
+                    (limit === 0 || uniqueCount[column] < limit)
+                ) {
+                    if (!result[column].values.includes(row[column])) {
+                        result[column].values.push(row[column]);
+                        uniqueCount[column] += 1;
+                    }
+                    if (addCount) {
+                        const valueId = row[column] === null ? 'null' : String(row[column]);
+                        result[column].counts[valueId] = result[column].counts[valueId] > 0 ? (result[column].counts[valueId] + 1) : 1;
+                    }
+
                 }
             }
         }
