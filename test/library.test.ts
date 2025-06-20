@@ -179,8 +179,7 @@ describe('Test parseHeader method', () => {
 
 describe('Test missing values', () => {
     it('Should read missing values as null', async () => {
-        const adttePath = `${__dirname}/adtte.xpt`;
-        const lib = new Library(adttePath);
+        const lib = new Library(pathADTTE);
         const columns = await lib.getMetadata() as DsMetadata[];
         const updatedColumns: ColumnMetadata[] = columns.map((column) => {
             return ({ ...column, dataType: column.type } as  ColumnMetadata);
@@ -196,8 +195,7 @@ describe('Test missing values', () => {
         expect(records.length).toBe(102);
     });
     it('Should read missing values as null when rounding is enabled', async () => {
-        const adttePath = `${__dirname}/adtte.xpt`;
-        const lib = new Library(adttePath);
+        const lib = new Library(pathADTTE);
         const columns = await lib.getMetadata() as DsMetadata[];
         const updatedColumns: ColumnMetadata[] = columns.map((column) => {
             return ({ ...column, dataType: column.type } as  ColumnMetadata);
