@@ -134,7 +134,10 @@ class Member {
                     let value: string|number;
                     if (types[index] === 'Num') {
                         if (roundPrecision !== undefined) {
-                            value = Math.round(ibm2ieee(data.subarray(0, length)) * multiplier) / multiplier;
+                            value = ibm2ieee(data.subarray(0, length));
+                            if (value !== null) {
+                                value = Math.round(value * multiplier) / multiplier;
+                            }
                         } else {
                             value = ibm2ieee(data.subarray(0, length));
                         }

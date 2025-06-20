@@ -19,6 +19,7 @@ interface AlfalfaRecord {
 }
 
 const path = `${__dirname}/Alfalfa.xpt`;
+const pathADTTE = `${__dirname}/adtte.xpt`;
 
 describe('Library default checks', () => {
     it('Library type should be a function', () => {
@@ -65,8 +66,8 @@ describe('Can read an xpt file', () => {
 
         // Check source system info
         expect(metadata.sourceSystem).toBeDefined();
-        expect(typeof metadata.sourceSystem.name).toBe('string');
-        expect(typeof metadata.sourceSystem.version).toBe('string');
+        expect(typeof metadata.sourceSystem?.name).toBe('string');
+        expect(typeof metadata.sourceSystem?.version).toBe('string');
 
         // Check datetime fields
         expect(metadata.datasetJSONCreationDateTime).toBeDefined();
@@ -78,7 +79,7 @@ describe('Can read xpt records using await iterable', () => {
     it('Records read are valid', async () => {
         const lib = new Library(path);
 
-        const records = [];
+        const records: (string | number | object)[] = [];
         for await (const obs of lib.read({ rowFormat: 'object' })) {
             records.push(obs);
         }
@@ -178,8 +179,7 @@ describe('Test parseHeader method', () => {
 
 describe('Test missing values', () => {
     it('Should read missing values as null', async () => {
-        const adttePath = `${__dirname}/adtte.xpt`;
-        const lib = new Library(adttePath);
+        const lib = new Library(pathADTTE);
         const columns = await lib.getMetadata() as DsMetadata[];
         const updatedColumns: ColumnMetadata[] = columns.map((column) => {
             return ({ ...column, dataType: column.type } as  ColumnMetadata);
@@ -194,4 +194,80 @@ describe('Test missing values', () => {
         const records = await lib.getData({ type: 'array', filter });
         expect(records.length).toBe(102);
     });
+    it('Should read missing values as null when rounding is enabled', async () => {
+        const lib = new Library(pathADTTE);
+        const columns = await lib.getMetadata() as DsMetadata[];
+        const updatedColumns: ColumnMetadata[] = columns.map((column) => {
+            return ({ ...column, dataType: column.type } as  ColumnMetadata);
+        });
+
+        const filter = new Filter("xpt", updatedColumns, {
+            conditions: [
+                { variable: "SRCSEQ", operator: "eq", value: null },
+            ],
+            connectors: [],
+        });
+        const records = await lib.getData({ type: 'array', filter, roundPrecision: 10 });
+        expect(records.length).toBe(102);
+    });
 });
+
+describe('Test getUniqueValues method', () => {
+    it('Should return unique values for specified columns (ADTTE)', async () => {
+        const lib = new Library(pathADTTE);
+        const unique = await lib.getUniqueValues({ columns: ['PARAMCD', 'AGE', 'SEX', 'RACE'] });
+
+        // Should have keys for each requested column
+        expect(Object.keys(unique)).toEqual(expect.arrayContaining(['PARAMCD', 'AGE', 'SEX', 'RACE']));
+
+        expect(Array.isArray(unique.PARAMCD.values)).toBe(true);
+        expect(unique.PARAMCD.values.length).toBeGreaterThan(0);
+        expect(unique.PARAMCD.values).toEqual(['TTDE']);
+
+        expect(Array.isArray(unique.AGE.values)).toBe(true);
+        expect(unique.AGE.values.length).toEqual(36);
+        expect(typeof unique.AGE.values[0]).toBe('number');
+
+        // SEX should have 'M' and 'F'
+        expect(unique.SEX.values.sort()).toEqual(['F', 'M']);
+
+        // RACE should have the specified values
+        expect(unique.RACE.values).toEqual(
+            expect.arrayContaining([
+                'WHITE',
+                'BLACK OR AFRICAN AMERICAN',
+                'AMERICAN INDIAN OR ALASKA NATIVE'
+            ])
+        );
+    });
+
+    it('Should respect the limit parameter (ADTTE)', async () => {
+        const lib = new Library(pathADTTE);
+        const unique = await lib.getUniqueValues({ columns: ['AGE'], limit: 10 });
+        expect(unique.AGE.values.length).toEqual(10);
+    });
+
+    it('Should add counts when addCount is true (ADTTE)', async () => {
+        const lib = new Library(pathADTTE);
+        const unique = await lib.getUniqueValues({ columns: ['RACE'], addCount: true });
+        expect(unique.RACE.counts).toBeDefined();
+        // Check that counts are correct
+        expect(unique.RACE.counts).toMatchSnapshot();
+    });
+
+    it('Should sort unique values when sort is true (ADTTE)', async () => {
+        const lib = new Library(pathADTTE);
+        const unique = await lib.getUniqueValues({ columns: ['AGE'], sort: true });
+        const sorted = [...unique.AGE.values].sort((a, b) => Number(a) - Number(b));
+        expect(unique.AGE.values).toEqual(sorted);
+    });
+
+    it('Should reject if column does not exist (ADTTE)', async () => {
+        const lib = new Library(pathADTTE);
+        await expect(lib.getUniqueValues({ columns: ['NOT_A_COLUMN'] }))
+            .rejects
+            .toThrow(/not found/);
+    });
+});
+
+

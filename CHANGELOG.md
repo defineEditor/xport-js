@@ -1,3 +1,7 @@
+# 0.3.0
+- Add getUniqueValues method
+- Fixed an issue when null values were returned as 0 in case roundPrecision is specified
+
 # 0.2.5
 - Added handling missing values, numeric missing values ., .A-.Z are read as null
 

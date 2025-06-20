@@ -1,5 +1,5 @@
 import Member from './member';
-import { Header, Options } from '../types/library';
+import { Header, Options, UniqueValues } from '../types/library';
 import { DatasetMetadata as DatasetJsonMetadata, ItemDescription as DatasetJsonColumn } from 'js-stream-dataset-json';
 import { createReadStream, createWriteStream } from 'fs';
 import Filter, { ItemDataArray } from 'js-array-filter';
@@ -314,6 +314,113 @@ class Library {
                     break;
                 }
             }
+        }
+        return result;
+    }
+
+    /**
+     * Get unique values observations.
+     * @param columns - The list of variables for which to obtain the unique observations.
+     * @param limit - The maximum number of values to store. 0 - no limit.
+     * @param sort - Controls whether to sort the unique values.
+     * @return An array of observations.
+     */
+    async getUniqueValues(props: {
+        columns: string[];
+        limit?: number;
+        addCount?: boolean;
+        sort?: boolean;
+        roundPrecision?: number;
+    }): Promise<UniqueValues> {
+
+        const { limit = 0, addCount = false, sort = false, roundPrecision } = props;
+        let { columns } = props;
+        // Check if metadata already parsed
+        const metadata = await this.getMetadata('dataset-json1.1');
+
+        const notFoundColumns: string[] = [];
+        // Use the case of the columns as specified in the metadata
+        columns = columns.map((item) => {
+            const column = metadata.columns.find(
+                (column) => column.name.toLowerCase() === item.toLowerCase()
+            );
+            if (column === undefined) {
+                notFoundColumns.push(item);
+                return '';
+            } else {
+                return column.name as string;
+            }
+        });
+
+        if (notFoundColumns.length > 0) {
+            return Promise.reject(
+                new Error(`Columns ${notFoundColumns.join(', ')} not found`)
+            );
+        }
+
+        // Store number of unique values found
+        const uniqueCount: { [name: string]: number } = {};
+        columns.forEach((column) => {
+            uniqueCount[column] = 0;
+        });
+
+        // Form options;
+        const options: Options = {
+            rowFormat: "object",
+            keep: columns,
+            skipHeader: true,
+            roundPrecision,
+        };
+
+        const result: UniqueValues = {};
+        for (let i = 0; i < Object.keys(this.members).length; i++) {
+            const member = Object.values(this.members)[i];
+            for await (const obs of member.read(this.pathToFile, options)) {
+                const obsObject = obs as { [key: string]: string|number|null };
+                columns.forEach((column) => {
+                    if (result[column] === undefined) {
+                        result[column] = { values: [], counts: {} };
+                    }
+                    if (
+                        (limit === 0 || uniqueCount[column] < limit)
+                    ) {
+                        if (!result[column].values.includes(obsObject[column])) {
+                            result[column].values.push(obsObject[column]);
+                            uniqueCount[column] += 1;
+                        }
+                        if (addCount) {
+                            const valueId = obsObject[column] === null ? 'null' : String(obsObject[column]);
+                            result[column].counts[valueId] = result[column].counts[valueId] > 0 ? (result[column].counts[valueId] + 1) : 1;
+                        }
+
+                    }
+                });
+                // Check if all columns are filled
+                if (Object.values(uniqueCount).every(count => count >= limit) && limit > 0) {
+                    break;
+                }
+            }
+        }
+
+        // Sort values if required
+        if (sort) {
+            Object.keys(result).forEach((column) => {
+                result[column].values.sort((a, b) => {
+                    if (typeof a === 'string' && typeof b === 'string') {
+                        return a.localeCompare(b);
+                    } else if (typeof a === 'number' && typeof b === 'number') {
+                        return a - b;
+                    } else if (a === null && b === null) {
+                        return 0;
+                    } else if (a === null) {
+                        return -1;
+                    } else if (b === null) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                });
+            });
         }
         return result;
     }

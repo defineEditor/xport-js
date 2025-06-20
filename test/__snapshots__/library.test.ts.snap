@@ -1,5 +1,13 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Test getUniqueValues method Should add counts when addCount is true (ADTTE) 1`] = `
+{
+  "AMERICAN INDIAN OR ALASKA NATIVE": 1,
+  "BLACK OR AFRICAN AMERICAN": 23,
+  "WHITE": 230,
+}
+`;
+
 exports[`Test parseHeader method Should correctly parse the header 1`] = `
 {
   "sasCreate": "23FEB18:03:32:49",
