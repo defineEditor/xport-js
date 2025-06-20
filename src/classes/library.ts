@@ -364,8 +364,6 @@ class Library {
             uniqueCount[column] = 0;
         });
 
-        let isFinished = false;        
-
         // Form options;
         const options: Options = {
             rowFormat: "object",
@@ -378,24 +376,51 @@ class Library {
         for (let i = 0; i < Object.keys(this.members).length; i++) {
             const member = Object.values(this.members)[i];
             for await (const obs of member.read(this.pathToFile, options)) {
+                const obsObject = obs as { [key: string]: string|number|null };
                 columns.forEach((column) => {
-                if (result[column] === undefined) {
-                    result[column] = { values: [], counts: {} };
-                }
-                if (
-                    (limit === 0 || uniqueCount[column] < limit)
-                ) {
-                    if (!result[column].values.includes(row[column])) {
-                        result[column].values.push(row[column]);
-                        uniqueCount[column] += 1;
+                    if (result[column] === undefined) {
+                        result[column] = { values: [], counts: {} };
                     }
-                    if (addCount) {
-                        const valueId = row[column] === null ? 'null' : String(row[column]);
-                        result[column].counts[valueId] = result[column].counts[valueId] > 0 ? (result[column].counts[valueId] + 1) : 1;
-                    }
+                    if (
+                        (limit === 0 || uniqueCount[column] < limit)
+                    ) {
+                        if (!result[column].values.includes(obsObject[column])) {
+                            result[column].values.push(obsObject[column]);
+                            uniqueCount[column] += 1;
+                        }
+                        if (addCount) {
+                            const valueId = obsObject[column] === null ? 'null' : String(obsObject[column]);
+                            result[column].counts[valueId] = result[column].counts[valueId] > 0 ? (result[column].counts[valueId] + 1) : 1;
+                        }
 
+                    }
+                });
+                // Check if all columns are filled
+                if (Object.values(uniqueCount).every(count => count >= limit) && limit > 0) {
+                    break;
                 }
             }
+        }
+
+        // Sort values if required
+        if (sort) {
+            Object.keys(result).forEach((column) => {
+                result[column].values.sort((a, b) => {
+                    if (typeof a === 'string' && typeof b === 'string') {
+                        return a.localeCompare(b);
+                    } else if (typeof a === 'number' && typeof b === 'number') {
+                        return a - b;
+                    } else if (a === null && b === null) {
+                        return 0;
+                    } else if (a === null) {
+                        return -1;
+                    } else if (b === null) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                });
+            });
         }
         return result;
     }

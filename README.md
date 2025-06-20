@@ -42,6 +42,37 @@ lib.read(outDir, options);
 ```
 See read method options description for details.
 
+## Library.getUniqueValues
+
+Returns unique values for specified columns in the dataset.
+
+### Usage
+
+```typescript
+const lib = new Library('path/to/file.xpt');
+const unique = await lib.getUniqueValues({
+  columns: ['AGE', 'SEX', 'RACE'],
+  limit: 10,           // Optional: max number of unique values per column (0 = no limit)
+  addCount: true,      // Optional: include counts for each unique value
+  sort: true,          // Optional: sort unique values
+  roundPrecision: 0    // Optional: round numeric values
+});
+```
+
+### Parameters
+
+- `columns` (string[]): List of variable names to get unique values for.
+- `limit` (number, optional): Maximum number of unique values per column (default: 0, no limit).
+- `addCount` (boolean, optional): Whether to include counts for each unique value (default: false).
+- `sort` (boolean, optional): Whether to sort the unique values (default: false).
+- `roundPrecision` (number, optional): Rounds numeric values to the specified precision.
+
+### Returns
+
+A Promise resolving to an object where each key is a column name and the value is an object with:
+- `values`: Array of unique values for that column.
+- `counts`: (if `addCount` is true) Object mapping value to count.
+
 # Authors
 
 * [**Dmitry Kolosov**](https://www.linkedin.com/in/dmitry-kolosov-91751413/)
