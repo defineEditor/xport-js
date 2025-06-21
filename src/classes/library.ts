@@ -93,7 +93,8 @@ class Library {
         const member = new Member(obsStart);
         member.parseRaw(data);
         // Currently only one member is supported
-        this.members = [ member ];
+        this.members.length = 0; // Clear the array while keeping the reference
+        this.members.push(member); // Add the new member
     }
 
     /**
