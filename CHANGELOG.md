@@ -1,3 +1,6 @@
+# 0.3.1
+- Fixed an issue. Each time metadata is obtained a new member was added.
+
 # 0.3.0
 - Add getUniqueValues method
 - Fixed an issue when null values were returned as 0 in case roundPrecision is specified
