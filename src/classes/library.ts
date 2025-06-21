@@ -92,7 +92,8 @@ class Library {
     private parseMembers (data: Buffer, obsStart: number): void {
         const member = new Member(obsStart);
         member.parseRaw(data);
-        this.members.push(member);
+        // Currently only one member is supported
+        this.members = [ member ];
     }
 
     /**
