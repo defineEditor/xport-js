@@ -1,3 +1,6 @@
+# 0.3.2
+- Updating dependencies.
+
 # 0.3.1
 - Fixed an issue. Each time metadata is obtained a new member was added.
 
