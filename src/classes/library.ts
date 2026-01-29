@@ -2,7 +2,7 @@ import Member from './member';
 import { Header, Options, UniqueValues, VariableMetadata } from '../types/library';
 import { DatasetMetadata as DatasetJsonMetadata, ItemDescription as DatasetJsonColumn } from 'js-stream-dataset-json';
 import { createReadStream, createWriteStream } from 'fs';
-import Filter, { BasicFilter, ItemDataArray, ColumnMetadata } from 'js-array-filter';
+import Filter, { BasicFilter, ItemDataArray, ColumnMetadata, ItemTypeXpt } from 'js-array-filter';
 import path from 'path';
 
 /**
@@ -285,11 +285,18 @@ class Library {
         if (filter !== undefined) {
 
             if (!(filter instanceof Filter)) {
-                const columns = await this.getMetadata() as VariableMetadata[];
-                const updatedColumns: ColumnMetadata[] = columns.map((column) => {
-                    return ({ ...column, dataType: column.type } as  ColumnMetadata);
+                const columns: ColumnMetadata[] = [];
+                Object.values(this.members).forEach((member: Member) => {
+                    member.variableOrder.forEach((varName: string) => {
+                        const variable = member.variables[varName];
+                        const varAttrs: ColumnMetadata = {
+                            name: variable.name,
+                            dataType: variable.type as ItemTypeXpt,
+                        };
+                        columns.push(varAttrs);
+                    });
                 });
-                filterClass = new Filter('xpt', updatedColumns, filter);
+                filterClass = new Filter('xpt', columns, filter);
             } else {
                 filterClass = props.filter as Filter | undefined;
             }

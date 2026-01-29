@@ -35,4 +35,4 @@ export interface VariableMetadata {
     type: string;
     format?: string;
     informat?: string;
-};
+}
