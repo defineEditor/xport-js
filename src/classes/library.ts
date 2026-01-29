@@ -283,8 +283,7 @@ class Library {
         // Create a filter class instance
         let filterClass: Filter | undefined = undefined;
         if (filter !== undefined) {
-
-            if (!(filter instanceof Filter)) {
+            if (!Object.prototype.hasOwnProperty.call(filter, 'filterRow')) {
                 const columns: ColumnMetadata[] = [];
                 Object.values(this.members).forEach((member: Member) => {
                     member.variableOrder.forEach((varName: string) => {
@@ -296,7 +295,7 @@ class Library {
                         columns.push(varAttrs);
                     });
                 });
-                filterClass = new Filter('xpt', columns, filter);
+                filterClass = new Filter('xpt', columns, filter as BasicFilter);
             } else {
                 filterClass = props.filter as Filter | undefined;
             }
