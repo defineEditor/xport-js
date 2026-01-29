@@ -1,5 +1,5 @@
 import Library from '../src/classes/library';
-import Filter, { ColumnMetadata } from 'js-array-filter';
+import Filter, { BasicFilter, ColumnMetadata } from 'js-array-filter';
 
 interface DsMetadata {
     dataset: string
@@ -161,6 +161,21 @@ describe('Can read xpt records using await function', () => {
             ],
             connectors: ["and"],
         });
+
+        const records = await lib.getData({ type: 'array', filter });
+        expect(records.length).toBe(20);
+    });
+    it('Should filter records correctly with BasicFilter', async () => {
+        const lib = new Library(path);
+
+
+        const filter = {
+            conditions: [
+                { variable: "POP", operator: "eq", value: 'MAX' },
+                { variable: "SAMPLE", operator: "ge", value: 3 },
+            ],
+            connectors: ["and"],
+        } as BasicFilter;
 
         const records = await lib.getData({ type: 'array', filter });
         expect(records.length).toBe(20);
