@@ -26,3 +26,13 @@ export interface UniqueValues {
 
     };
 }
+
+export interface VariableMetadata {
+    dataset: string;
+    name: string;
+    label: string;
+    length: number;
+    type: string;
+    format?: string;
+    informat?: string;
+}

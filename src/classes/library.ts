@@ -1,8 +1,8 @@
 import Member from './member';
-import { Header, Options, UniqueValues } from '../types/library';
+import { Header, Options, UniqueValues, VariableMetadata } from '../types/library';
 import { DatasetMetadata as DatasetJsonMetadata, ItemDescription as DatasetJsonColumn } from 'js-stream-dataset-json';
 import { createReadStream, createWriteStream } from 'fs';
-import Filter, { ItemDataArray } from 'js-array-filter';
+import Filter, { BasicFilter, ItemDataArray, ColumnMetadata, ItemTypeXpt } from 'js-array-filter';
 import path from 'path';
 
 /**
@@ -102,7 +102,7 @@ class Library {
      */
     public async getMetadata<T extends "xport" | "dataset-json1.1">(
         format: T = "xport" as T
-    ): Promise<T extends "dataset-json1.1" ? DatasetJsonMetadata : object> {
+    ): Promise<T extends "dataset-json1.1" ? DatasetJsonMetadata : VariableMetadata[]> {
         // Get header of the XPT containing metadata
         let data = Buffer.from([]);
         const stream = createReadStream(this.pathToFile);
@@ -122,11 +122,11 @@ class Library {
         // Parse members - the rest
         this.parseMembers(data.subarray(3 * 80), obsStart);
 
-        const result: object[] = [];
+        const result: VariableMetadata[] = [];
         Object.values(this.members).forEach((member: Member) => {
             member.variableOrder.forEach((varName: string) => {
                 const variable = member.variables[varName];
-                const varAttrs: { [key: string]: string|null|number } = {
+                const varAttrs: VariableMetadata = {
                     dataset: member.name,
                     name: variable.name,
                     label: variable.label,
@@ -151,7 +151,7 @@ class Library {
         });
 
         if (format === 'xport') {
-            return result as T extends "dataset-json1.1" ? DatasetJsonMetadata : object;
+            return result as T extends "dataset-json1.1" ? DatasetJsonMetadata : VariableMetadata[];
         } else if (format === 'dataset-json1.1') {
             if (this.members.length !== 1) {
                 // throw(new Error('format only supports single dataset files'));
@@ -159,14 +159,14 @@ class Library {
             const currentMember = this.members[0];
             const records = currentMember.getRecordsNum(this.pathToFile);
 
-            const updatedColumns: DatasetJsonColumn[] = result.map((column: { [key: string]: string }) => {
+            const updatedColumns: DatasetJsonColumn[] = result.map((column: VariableMetadata) => {
                 const updateType = column.type === 'Char' ? 'string' : 'double';
                 const updatedColumn: DatasetJsonColumn = {
                     itemOID: column.name,
                     name: column.name,
                     label: column.label,
                     dataType: updateType,
-                    length: parseInt(column.length),
+                    length: column.length,
                     displayFormat: column.format,
                 };
                 return updatedColumn;
@@ -187,7 +187,7 @@ class Library {
                 }
 
             };
-            return djMetadata;
+            return djMetadata as T extends "dataset-json1.1" ? DatasetJsonMetadata : VariableMetadata[];
         }
     }
 
@@ -267,7 +267,7 @@ class Library {
         length?: number;
         type?: "object" | "array";
         filterColumns?: string[];
-        filter?: Filter;
+        filter?: Filter | BasicFilter;
         skipHeader?: boolean;
         roundPrecision?: number;
     }): Promise<Array<Array<number|string>|object>> {
@@ -280,12 +280,34 @@ class Library {
             await this.getMetadata();
         }
 
+        // Create a filter class instance
+        let filterClass: Filter | undefined = undefined;
+        if (filter !== undefined) {
+
+            if (!(filter instanceof Filter)) {
+                const columns: ColumnMetadata[] = [];
+                Object.values(this.members).forEach((member: Member) => {
+                    member.variableOrder.forEach((varName: string) => {
+                        const variable = member.variables[varName];
+                        const varAttrs: ColumnMetadata = {
+                            name: variable.name,
+                            dataType: variable.type as ItemTypeXpt,
+                        };
+                        columns.push(varAttrs);
+                    });
+                });
+                filterClass = new Filter('xpt', columns, filter);
+            } else {
+                filterClass = props.filter as Filter | undefined;
+            }
+        }
+
         // Form options;
         const options: Options = {
             rowFormat: type,
             keep: filterColumns,
             skipHeader: skipHeader,
-            filter: filter,
+            filter: filterClass,
             roundPrecision,
         };
 
@@ -305,7 +327,7 @@ class Library {
                     continue;
                 }
                 if (isFiltered) {
-                    if (filter.filterRow(obs as ItemDataArray)) {
+                    if (filterClass.filterRow(obs as ItemDataArray)) {
                         result.push(obs);
                     }
                 } else {
