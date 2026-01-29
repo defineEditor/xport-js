@@ -108,7 +108,7 @@ describe('Can read xpt records using await function', () => {
         const lib = new Library(path);
 
         const records = await lib.getData({ type: 'object', skipHeader: false });
-        const headers = records.shift() as AlfalfaRecord;
+        const headers = records.data.shift() as AlfalfaRecord;
         expect(headers.POP).toBe('');
         expect(headers.SAMPLE).toBe('');
         expect(headers.REP).toBe('');
@@ -116,7 +116,7 @@ describe('Can read xpt records using await function', () => {
         expect(headers.HARV1).toBe('');
         expect(headers.HARV2).toBe('');
 
-        const firstElement: AlfalfaRecord = records[0] as AlfalfaRecord;
+        const firstElement: AlfalfaRecord = records.data[0] as AlfalfaRecord;
         expect(firstElement.POP).toBe('min');
         expect(firstElement.SAMPLE).toBe(0);
         expect(firstElement.REP).toBe(1);
@@ -124,7 +124,7 @@ describe('Can read xpt records using await function', () => {
         expect(firstElement.HARV1).toBe(171.7);
         expect(firstElement.HARV2).toBe(180.3);
 
-        expect(records.length).toBe(40);
+        expect(records.data.length).toBe(40);
     });
 
     it('Should round numeric values according to precision', async () => {
@@ -134,7 +134,7 @@ describe('Can read xpt records using await function', () => {
             roundPrecision: 1
         });
 
-        const firstElement: AlfalfaRecord = records[1] as AlfalfaRecord;
+        const firstElement: AlfalfaRecord = records.data[1] as AlfalfaRecord;
         expect(firstElement.HARV1).toBe(138.2);  // Original value preserved
 
         const roundedRecords = await lib.getData({
@@ -142,7 +142,7 @@ describe('Can read xpt records using await function', () => {
             roundPrecision: 0
         });
 
-        const firstRoundedElement: AlfalfaRecord = roundedRecords[1] as AlfalfaRecord;
+        const firstRoundedElement: AlfalfaRecord = roundedRecords.data[1] as AlfalfaRecord;
         expect(firstRoundedElement.HARV1).toBe(138);  // Rounded to nearest integer
     });
 
@@ -163,7 +163,29 @@ describe('Can read xpt records using await function', () => {
         });
 
         const records = await lib.getData({ type: 'array', filter });
-        expect(records.length).toBe(20);
+        expect(records.data.length).toBe(20);
+        expect(records.lastRow).toBe(39);
+        expect(records.endReached).toBe(true);
+    });
+    it('Should set lastRow and endReached', async () => {
+        const lib = new Library(path);
+        const columns = await lib.getMetadata() as DsMetadata[];
+
+        const updatedColumns: ColumnMetadata[] = columns.map((column) => {
+            return ({ ...column, dataType: column.type } as  ColumnMetadata);
+        });
+
+        const filter = new Filter("xpt", updatedColumns, {
+            conditions: [
+                { variable: "POP", operator: "eq", value: 'min' }
+            ],
+            connectors: [],
+        });
+
+        const records = await lib.getData({ type: 'array', filter, length: 18 });
+        expect(records.data.length).toBe(18);
+        expect(records.lastRow).toBe(32);
+        expect(records.endReached).toBe(false);
     });
     it('Should filter records correctly with BasicFilter', async () => {
         const lib = new Library(path);
@@ -178,7 +200,7 @@ describe('Can read xpt records using await function', () => {
         } as BasicFilter;
 
         const records = await lib.getData({ type: 'array', filter });
-        expect(records.length).toBe(20);
+        expect(records.data.length).toBe(20);
     });
 });
 
@@ -207,7 +229,7 @@ describe('Test missing values', () => {
             connectors: [],
         });
         const records = await lib.getData({ type: 'array', filter });
-        expect(records.length).toBe(102);
+        expect(records.data.length).toBe(102);
     });
     it('Should read missing values as null when rounding is enabled', async () => {
         const lib = new Library(pathADTTE);
@@ -223,7 +245,7 @@ describe('Test missing values', () => {
             connectors: [],
         });
         const records = await lib.getData({ type: 'array', filter, roundPrecision: 10 });
-        expect(records.length).toBe(102);
+        expect(records.data.length).toBe(102);
     });
 });
 

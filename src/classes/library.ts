@@ -270,7 +270,7 @@ class Library {
         filter?: Filter | BasicFilter;
         skipHeader?: boolean;
         roundPrecision?: number;
-    }): Promise<Array<Array<number|string>|object>> {
+    }): Promise<{data: Array<Array<number|string>|object>, lastRow: number, endReached: boolean}> {
         // Check if metadata already parsed
         const { start = 0, length, type = 'array', filter, skipHeader = true, filterColumns, roundPrecision } = props;
 
@@ -313,6 +313,7 @@ class Library {
         let currentObs = 0;
 
         const result = [];
+        let endReached = true;
         for (let i = 0; i < Object.keys(this.members).length; i++) {
             const member = Object.values(this.members)[i];
             // Output header
@@ -334,11 +335,18 @@ class Library {
                 }
                 if (length && result.length === length) {
                     // Stop when length is reached
+                    // In fact, end can be reached at this point, if the last observation was read
+                    // and it hit the length limit exactly
+                    endReached  = false;
                     break;
                 }
             }
         }
-        return result;
+        return {
+            data: result,
+            lastRow: currentObs - 1,
+            endReached,
+        };
     }
 
     /**
