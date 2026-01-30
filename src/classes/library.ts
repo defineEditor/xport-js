@@ -337,7 +337,7 @@ class Library {
                     // Stop when length is reached
                     // In fact, end can be reached at this point, if the last observation was read
                     // and it hit the length limit exactly
-                    endReached  = false;
+                    endReached = false;
                     break;
                 }
             }
