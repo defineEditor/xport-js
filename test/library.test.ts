@@ -28,15 +28,15 @@ describe('Library default checks', () => {
 });
 
 describe('Can read an xpt file', () => {
-    it('Library should have pathToFile field', () => {
+    it('Library should have filePath field', () => {
         const lib = new Library(path);
-        expect(lib.pathToFile).toBe(path);
+        expect(lib.filePath).toBe(path);
     });
 
     it('Library should provide metadata', async () => {
         const lib = new Library(path);
 
-        const metadata: DsMetadata[] = await lib.getMetadata() as DsMetadata[];
+        const metadata: DsMetadata[] = await lib.getMetadata('xport') as DsMetadata[];
         expect(metadata.length).toBe(6);
 
         const firstElement = metadata[0];
@@ -148,7 +148,7 @@ describe('Can read xpt records using await function', () => {
 
     it('Should filter records correctly', async () => {
         const lib = new Library(path);
-        const columns = await lib.getMetadata() as DsMetadata[];
+        const columns = await lib.getMetadata('xport') as DsMetadata[];
 
         const updatedColumns: ColumnMetadata[] = columns.map((column) => {
             return ({ ...column, dataType: column.type } as  ColumnMetadata);
@@ -169,7 +169,7 @@ describe('Can read xpt records using await function', () => {
     });
     it('Should set lastRow and endReached', async () => {
         const lib = new Library(path);
-        const columns = await lib.getMetadata() as DsMetadata[];
+        const columns = await lib.getMetadata('xport') as DsMetadata[];
 
         const updatedColumns: ColumnMetadata[] = columns.map((column) => {
             return ({ ...column, dataType: column.type } as  ColumnMetadata);
@@ -217,7 +217,7 @@ describe('Test parseHeader method', () => {
 describe('Test missing values', () => {
     it('Should read missing values as null', async () => {
         const lib = new Library(pathADTTE);
-        const columns = await lib.getMetadata() as DsMetadata[];
+        const columns = await lib.getMetadata('xport') as DsMetadata[];
         const updatedColumns: ColumnMetadata[] = columns.map((column) => {
             return ({ ...column, dataType: column.type } as  ColumnMetadata);
         });
@@ -233,7 +233,7 @@ describe('Test missing values', () => {
     });
     it('Should read missing values as null when rounding is enabled', async () => {
         const lib = new Library(pathADTTE);
-        const columns = await lib.getMetadata() as DsMetadata[];
+        const columns = await lib.getMetadata('xport') as DsMetadata[];
         const updatedColumns: ColumnMetadata[] = columns.map((column) => {
             return ({ ...column, dataType: column.type } as  ColumnMetadata);
         });

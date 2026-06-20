@@ -1,5 +1,10 @@
 # Changelog
 
+# 0.5.0
+- Breaking change: pathToFile change to filePath
+- Breaking change: getMetadata default format argument value changed to 'dataset-json1.1' instead of 'xport'
+- Updated dependencies (js-array-filter to 0.2.2)
+
 # 0.4.0
 - Breaking change: getData return signature changed to { data: ItemDataArray[]|ItemDataObject[] , lastRow: number, endReached: boolean}
 

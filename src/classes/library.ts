@@ -15,15 +15,15 @@ class Library {
     modified: object;
     sasVersion: string;
     osVersion: string;
-    pathToFile: string;
+    filePath: string;
     header: Header;
     /**
      * Library associated with the XPORT file.
-     * @param pathToFile Path to XPT file.
+     * @param filePath Path to XPT file.
      * @param options Options.
      */
-    constructor (pathToFile: string) {
-        this.pathToFile = pathToFile;
+    constructor (filePath: string) {
+        this.filePath = filePath;
         this.members = [];
         this.header = {
             sasSymbol: [],
@@ -101,11 +101,11 @@ class Library {
      * Get metadata information from XPORT file.
      */
     public async getMetadata<T extends "xport" | "dataset-json1.1">(
-        format: T = "xport" as T
+        format: T = "dataset-json1.1" as T
     ): Promise<T extends "dataset-json1.1" ? DatasetJsonMetadata : VariableMetadata[]> {
         // Get header of the XPT containing metadata
         let data = Buffer.from([]);
-        const stream = createReadStream(this.pathToFile);
+        const stream = createReadStream(this.filePath);
         // Position of the first observation in the dataset;
         let obsStart: number;
         for await (const chunk of stream) {
@@ -157,7 +157,7 @@ class Library {
                 // throw(new Error('format only supports single dataset files'));
             }
             const currentMember = this.members[0];
-            const records = currentMember.getRecordsNum(this.pathToFile);
+            const records = currentMember.getRecordsNum(this.filePath);
 
             const updatedColumns: DatasetJsonColumn[] = result.map((column: VariableMetadata) => {
                 const updateType = column.type === 'Char' ? 'string' : 'double';
@@ -246,13 +246,13 @@ class Library {
             if (!options?.skipHeader) {
                 yield this.getHeaderRecord(member, options);
             }
-            for await (const obs of member.read(this.pathToFile, options)) {
+            for await (const obs of member.read(this.filePath, options)) {
                 yield obs;
             }
         }
         /* TODO Add multiple dataset case
         Object.values(this.members).forEach((member: Member) => {
-            let result = await member.read(this.pathToFile);
+            let result = await member.read(this.filePath);
         });
         */
         return [];
@@ -320,7 +320,7 @@ class Library {
             if (!skipHeader) {
                 result.push(this.getHeaderRecord(member, options));
             }
-            for await (const obs of member.read(this.pathToFile, options)) {
+            for await (const obs of member.read(this.filePath, options)) {
                 currentObs++;
                 if (start !== undefined && currentObs <= start) {
                     // Skip until start
@@ -406,7 +406,7 @@ class Library {
         const result: UniqueValues = {};
         for (let i = 0; i < Object.keys(this.members).length; i++) {
             const member = Object.values(this.members)[i];
-            for await (const obs of member.read(this.pathToFile, options)) {
+            for await (const obs of member.read(this.filePath, options)) {
                 const obsObject = obs as { [key: string]: string|number|null };
                 columns.forEach((column) => {
                     if (result[column] === undefined) {
@@ -478,7 +478,7 @@ class Library {
                 const header: string[] = this.getHeaderRecord(member, modifiedOpitions) as string[];
                 writer.write(header.join() + '\n');
             }
-            for await (const obs of member.read(this.pathToFile, modifiedOpitions)) {
+            for await (const obs of member.read(this.filePath, modifiedOpitions)) {
                 // Escape double quotes and commas
                 const escapedObs: Array<string|number> = (obs as Array<string|number>).map(elem => {
                     if (typeof elem === 'string' && /,|"/.test(elem)) {

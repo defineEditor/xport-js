@@ -80,11 +80,11 @@ class Member {
 
     /**
      * Read member observations.
-     * @param pathToFile Path to XPT file.
+     * @param filePath Path to XPT file.
      * @param options Read options. See Library.read method description for details.
      * @return Async Iterable which returns observations
      */
-    public async * read (pathToFile: string, options?: Options): AsyncIterable<Array<number|string>|object> {
+    public async * read (filePath: string, options?: Options): AsyncIterable<Array<number|string>|object> {
         // Options
         const encoding = options?.encoding !== undefined ? options.encoding : 'binary';
         const rowType = options?.rowFormat === 'object' ? 'object' : 'array';
@@ -95,7 +95,7 @@ class Member {
         }
         let keep = options?.keep !== undefined ? options.keep : [];
         keep = keep.map(varName => varName.toUpperCase());
-        const stream = createReadStream(pathToFile, { start: this.obsStart });
+        const stream = createReadStream(filePath, { start: this.obsStart });
         const obsSize: number = Object.values(this.variables).reduce((totLen, variable) => (totLen + variable.length), 0);
         // Get sizes/names/types/skip flag for all variables
         const lengths: number[] = [];
@@ -159,16 +159,16 @@ class Member {
 
     /**
      * Get total number of records in the member
-     * @param pathToFile Path to XPT file
+     * @param filePath Path to XPT file
      * @returns Number of records
      */
-    public getRecordsNum(pathToFile: string): number {
+    public getRecordsNum(filePath: string): number {
         if (!this.variables || Object.keys(this.variables).length === 0) {
             return 0;
         }
 
         const obsSize: number = Object.values(this.variables).reduce((totLen, variable) => (totLen + variable.length), 0);
-        const stats = statSync(pathToFile);
+        const stats = statSync(filePath);
 
         // Calculate nameStr section size with proper padding
         const numVars = Object.keys(this.variables).length;
